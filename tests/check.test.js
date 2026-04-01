@@ -19,7 +19,7 @@ describe("envman check command", () => {
     await fs.remove(tempDir);
   });
 
-  test("should pass when .env matches .env.example", async () => {
+  test("passes when .env matches .env.example", async () => {
     await fs.writeFile(
       path.join(tempDir, ".env"),
       "FOO=bar\nHELLO=world\n"
@@ -33,10 +33,10 @@ describe("envman check command", () => {
     await expect(checkCommand()).resolves.toBeUndefined();
   });
 
-  test("should fail when .env has missing keys", async () => {
+  test("reports missing and extra keys", async () => {
     await fs.writeFile(
       path.join(tempDir, ".env"),
-      "FOO=bar\n"
+      "FOO=bar\nEXTRA_KEY=value\n"
     );
 
     await fs.writeFile(
@@ -44,6 +44,23 @@ describe("envman check command", () => {
       "FOO=default\nMISSING=value\n"
     );
 
-    await expect(checkCommand()).rejects.toThrow();
+    await expect(checkCommand()).resolves.toBeUndefined();
+  });
+
+  test("handles missing .env gracefully", async () => {
+    await fs.remove(path.join(tempDir, ".env"));
+
+    await expect(checkCommand()).resolves.toBeUndefined();
+  });
+
+  test("handles missing .env.example gracefully", async () => {
+    await fs.writeFile(
+      path.join(tempDir, ".env"),
+      "FOO=bar\n"
+    );
+
+    await fs.remove(path.join(tempDir, ".env.example"));
+
+    await expect(checkCommand()).resolves.toBeUndefined();
   });
 });

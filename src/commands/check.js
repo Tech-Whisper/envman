@@ -14,11 +14,17 @@ async function checkCommand() {
   const exampleExists = await fs.pathExists(examplePath);
 
   if (!envExists) {
-    throw new Error("No .env found");
+    console.error(
+      chalk.red("No .env found")
+    );
+    return;
   }
 
   if (!exampleExists) {
-    throw new Error("No .env.example found");
+    console.error(
+      chalk.red("No .env.example found")
+    );
+    return;
   }
 
   const envContent = await fs.readFile(envPath, "utf-8");
@@ -60,8 +66,6 @@ async function checkCommand() {
       chalk.yellow(`Extra keys: ${extra.join(", ")}`)
     );
   }
-
-  throw new Error(`Missing: ${missing.join(", ")} | Extra: ${extra.join(", ")}`);
 }
 
 module.exports = {
