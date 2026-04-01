@@ -35,6 +35,15 @@ function askConfirmation(question) {
  * @param {string} key - The env key to remove
  */
 async function removeCommand(key) {
+  if (!key || !key.trim()) {
+    console.error(
+      chalk.red("Key cannot be empty")
+    );
+    return;
+  }
+
+  key = key.trim();
+
   const envPath = path.join(process.cwd(), ".env");
 
   const exists = await fs.pathExists(envPath);

@@ -6,20 +6,33 @@ const readline = require("readline");
 /**
  * Parse KEY=value input string
  * @param {string} input
- * @returns {{key: string, value: string}}
+ * @returns {{key: string, value: string}|null}
  */
 function parseInput(input) {
+  if (!input || !input.trim()) {
+    console.error(
+      chalk.red("Invalid format. Use: envman add KEY=value")
+    );
+    return null;
+  }
+
   const eqIndex = input.indexOf("=");
 
   if (eqIndex === -1) {
-    throw new Error("Invalid format. Use: envman add KEY=value");
+    console.error(
+      chalk.red("Invalid format. Use: envman add KEY=value")
+    );
+    return null;
   }
 
   const key = input.slice(0, eqIndex).trim();
   const value = input.slice(eqIndex + 1);
 
   if (!key) {
-    throw new Error("Key cannot be empty");
+    console.error(
+      chalk.red("Key cannot be empty")
+    );
+    return null;
   }
 
   return { key, value };
@@ -57,7 +70,13 @@ function askConfirmation(question) {
  * @param {string} input - KEY=VALUE string
  */
 async function addCommand(input) {
-  const { key, value } = parseInput(input);
+  const parsed = parseInput(input);
+
+  if (!parsed) {
+    return;
+  }
+
+  const { key, value } = parsed;
 
   const envPath = path.join(process.cwd(), ".env");
 
@@ -87,7 +106,13 @@ async function addCommand(input) {
   }
 
   if (existingIndex === -1) {
-    lines.push(`${key}=${value}`);
+    const hasTrailingNewline = content.endsWith("\n");
+    const lastEmptyIndex = lines.length - 1;
+    if (hasTrailingNewline && lines[lastEmptyIndex] === "") {
+      lines.splice(lastEmptyIndex, 0, `${key}=${value}`);
+    } else {
+      lines.push(`${key}=${value}`);
+    }
     await fs.writeFile(envPath, lines.join("\n"), "utf-8");
     console.log(chalk.green(`Added ${key}`));
     return;

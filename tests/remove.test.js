@@ -32,10 +32,7 @@ describe("envman remove command", () => {
     const envPath = path.join(tempDir, ".env");
     const content = await fs.readFile(envPath, "utf-8");
 
-    expect(content).not.toContain("REMOVE_ME");
-    expect(content).toContain("# comment");
-    expect(content).toContain("FOO=bar");
-    expect(content).toContain("KEEP=this");
+    expect(content).toBe("# comment\nFOO=bar\nKEEP=this\n");
   });
 
   test("does not remove with N", async () => {
@@ -51,11 +48,10 @@ describe("envman remove command", () => {
     const envPath = path.join(tempDir, ".env");
     const content = await fs.readFile(envPath, "utf-8");
 
-    expect(content).toContain("FOO=bar");
-    expect(content).toContain("KEEP=this");
+    expect(content).toBe("FOO=bar\nKEEP=this\n");
   });
 
-  test("key not found", async () => {
+  test("key not found leaves file unchanged", async () => {
     await fs.writeFile(
       path.join(tempDir, ".env"),
       "FOO=bar\n"
@@ -69,9 +65,55 @@ describe("envman remove command", () => {
     expect(content).toBe("FOO=bar\n");
   });
 
-  test("no .env file", async () => {
+  test("no .env file handles gracefully", async () => {
     await fs.remove(path.join(tempDir, ".env"));
 
     await removeCommand("ANY_KEY");
+  });
+
+  test("removes first occurrence of duplicate key", async () => {
+    await fs.writeFile(
+      path.join(tempDir, ".env"),
+      "FOO=first\nFOO=second\nKEEP=this\n"
+    );
+
+    global.__mockAnswer = "Y";
+
+    await removeCommand("FOO");
+
+    const envPath = path.join(tempDir, ".env");
+    const content = await fs.readFile(envPath, "utf-8");
+
+    expect(content).toBe("FOO=second\nKEEP=this\n");
+  });
+
+  test("empty key handled safely", async () => {
+    await fs.writeFile(
+      path.join(tempDir, ".env"),
+      "FOO=bar\n"
+    );
+
+    await removeCommand("");
+
+    const envPath = path.join(tempDir, ".env");
+    const content = await fs.readFile(envPath, "utf-8");
+
+    expect(content).toBe("FOO=bar\n");
+  });
+
+  test("preserves comments and blank lines after removal", async () => {
+    await fs.writeFile(
+      path.join(tempDir, ".env"),
+      "# db config\nDB_HOST=localhost\n\n# api\nAPI_KEY=abc\nDB_PORT=5432\n"
+    );
+
+    global.__mockAnswer = "Y";
+
+    await removeCommand("DB_HOST");
+
+    const envPath = path.join(tempDir, ".env");
+    const content = await fs.readFile(envPath, "utf-8");
+
+    expect(content).toBe("# db config\n\n# api\nAPI_KEY=abc\nDB_PORT=5432\n");
   });
 });
