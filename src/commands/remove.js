@@ -1,33 +1,14 @@
 const fs = require("fs-extra");
 const path = require("path");
 const chalk = require("chalk");
-const readline = require("readline");
 
 /**
- * Prompt user for y/N confirmation
- * @param {string} question
- * @returns {Promise<boolean>}
+ * Validate that the key is a non-empty string
+ * @param {string} key
+ * @returns {boolean}
  */
-function askConfirmation(question) {
-  if (global.__mockAnswer !== undefined) {
-    const answer = global.__mockAnswer;
-    delete global.__mockAnswer;
-    const normalized = answer.trim().toLowerCase();
-    return Promise.resolve(normalized === "y" || normalized === "yes");
-  }
-
-  return new Promise((resolve) => {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    rl.question(question, (answer) => {
-      rl.close();
-      const normalized = answer.trim().toLowerCase();
-      resolve(normalized === "y" || normalized === "yes");
-    });
-  });
+function isValidKey(key) {
+  return typeof key === "string" && key.trim().length > 0;
 }
 
 /**
@@ -35,7 +16,7 @@ function askConfirmation(question) {
  * @param {string} key - The env key to remove
  */
 async function removeCommand(key) {
-  if (!key || !key.trim()) {
+  if (!isValidKey(key)) {
     console.error(
       chalk.red("Key cannot be empty")
     );
@@ -50,7 +31,7 @@ async function removeCommand(key) {
 
   if (!exists) {
     console.error(
-      chalk.red("No .env found. Nothing to remove")
+      chalk.red("No .env found")
     );
     return;
   }
@@ -65,28 +46,17 @@ async function removeCommand(key) {
     if (line.trim() === "" || line.trim().startsWith("#")) {
       continue;
     }
-    const match = line.match(/^([\w.-]+)\s*=/);
-    if (match && match[1] === key) {
+    const eqIndex = line.indexOf("=");
+    if (eqIndex !== -1 && line.slice(0, eqIndex).trim() === key) {
       removeIndex = i;
       break;
     }
   }
 
   if (removeIndex === -1) {
-    console.log(
-      chalk.yellow(`${key} not found`)
+    console.error(
+      chalk.red(`${key} not found in .env`)
     );
-    return;
-  }
-
-  console.log(
-    chalk.yellow(`Remove ${key}? (y/N)`)
-  );
-
-  const confirmed = await askConfirmation("");
-
-  if (!confirmed) {
-    console.log(chalk.yellow("Cancelled"));
     return;
   }
 
@@ -100,5 +70,5 @@ async function removeCommand(key) {
 
 module.exports = {
   removeCommand,
-  askConfirmation,
+  isValidKey,
 };

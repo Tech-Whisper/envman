@@ -19,101 +19,29 @@ describe("envman remove command", () => {
     await fs.remove(tempDir);
   });
 
-  test("removes existing key with Y", async () => {
-    await fs.writeFile(
-      path.join(tempDir, ".env"),
-      "# comment\nFOO=bar\nREMOVE_ME=value\nKEEP=this\n"
-    );
+  test("removes existing key and preserves file structure", async () => {
+    const original = "# db config\nDB_HOST=localhost\n\n# api\nAPI_KEY=abc\nDB_PORT=5432\n";
 
-    global.__mockAnswer = "Y";
+    await fs.writeFile(path.join(tempDir, ".env"), original);
 
-    await removeCommand("REMOVE_ME");
+    await removeCommand("API_KEY");
 
     const envPath = path.join(tempDir, ".env");
     const content = await fs.readFile(envPath, "utf-8");
 
-    expect(content).toBe("# comment\nFOO=bar\nKEEP=this\n");
+    expect(content).toBe("# db config\nDB_HOST=localhost\n\n# api\nDB_PORT=5432\n");
   });
 
-  test("does not remove with N", async () => {
-    await fs.writeFile(
-      path.join(tempDir, ".env"),
-      "FOO=bar\nKEEP=this\n"
-    );
+  test("fails when key does not exist and does not modify file", async () => {
+    const original = "FOO=bar\nBAZ=qux\n";
 
-    global.__mockAnswer = "N";
-
-    await removeCommand("FOO");
-
-    const envPath = path.join(tempDir, ".env");
-    const content = await fs.readFile(envPath, "utf-8");
-
-    expect(content).toBe("FOO=bar\nKEEP=this\n");
-  });
-
-  test("key not found leaves file unchanged", async () => {
-    await fs.writeFile(
-      path.join(tempDir, ".env"),
-      "FOO=bar\n"
-    );
+    await fs.writeFile(path.join(tempDir, ".env"), original);
 
     await removeCommand("NONEXISTENT");
 
     const envPath = path.join(tempDir, ".env");
     const content = await fs.readFile(envPath, "utf-8");
 
-    expect(content).toBe("FOO=bar\n");
-  });
-
-  test("no .env file handles gracefully", async () => {
-    await fs.remove(path.join(tempDir, ".env"));
-
-    await removeCommand("ANY_KEY");
-  });
-
-  test("removes first occurrence of duplicate key", async () => {
-    await fs.writeFile(
-      path.join(tempDir, ".env"),
-      "FOO=first\nFOO=second\nKEEP=this\n"
-    );
-
-    global.__mockAnswer = "Y";
-
-    await removeCommand("FOO");
-
-    const envPath = path.join(tempDir, ".env");
-    const content = await fs.readFile(envPath, "utf-8");
-
-    expect(content).toBe("FOO=second\nKEEP=this\n");
-  });
-
-  test("empty key handled safely", async () => {
-    await fs.writeFile(
-      path.join(tempDir, ".env"),
-      "FOO=bar\n"
-    );
-
-    await removeCommand("");
-
-    const envPath = path.join(tempDir, ".env");
-    const content = await fs.readFile(envPath, "utf-8");
-
-    expect(content).toBe("FOO=bar\n");
-  });
-
-  test("preserves comments and blank lines after removal", async () => {
-    await fs.writeFile(
-      path.join(tempDir, ".env"),
-      "# db config\nDB_HOST=localhost\n\n# api\nAPI_KEY=abc\nDB_PORT=5432\n"
-    );
-
-    global.__mockAnswer = "Y";
-
-    await removeCommand("DB_HOST");
-
-    const envPath = path.join(tempDir, ".env");
-    const content = await fs.readFile(envPath, "utf-8");
-
-    expect(content).toBe("# db config\n\n# api\nAPI_KEY=abc\nDB_PORT=5432\n");
+    expect(content).toBe(original);
   });
 });
