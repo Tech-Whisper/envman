@@ -1,6 +1,34 @@
 const fs = require("fs-extra");
 const path = require("path");
 const chalk = require("chalk");
+const readline = require("readline");
+
+/**
+ * Prompt user for y/N confirmation
+ * @param {string} question
+ * @returns {Promise<boolean>}
+ */
+function askConfirmation(question) {
+  if (global.__mockAnswer !== undefined) {
+    const answer = global.__mockAnswer;
+    delete global.__mockAnswer;
+    const normalized = answer.trim().toLowerCase();
+    return Promise.resolve(normalized === "y" || normalized === "yes");
+  }
+
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    rl.question(question, (answer) => {
+      rl.close();
+      const normalized = answer.trim().toLowerCase();
+      resolve(normalized === "y" || normalized === "yes");
+    });
+  });
+}
 
 /**
  * Execute remove command
@@ -12,34 +40,56 @@ async function removeCommand(key) {
   const exists = await fs.pathExists(envPath);
 
   if (!exists) {
-    throw new Error("No .env found");
+    console.error(
+      chalk.red("No .env found. Nothing to remove")
+    );
+    return;
   }
 
   const content = await fs.readFile(envPath, "utf-8");
   const lines = content.split("\n");
 
-  let found = false;
+  let removeIndex = -1;
 
-  const updatedLines = lines.filter(line => {
-    const match = line.match(/^\s*([\w.-]+)\s*=/);
-    if (match && match[1] === key) {
-      found = true;
-      return false;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim() === "" || line.trim().startsWith("#")) {
+      continue;
     }
-    return true;
-  });
-
-  if (!found) {
-    throw new Error(`Key "${key}" not found in .env`);
+    const match = line.match(/^([\w.-]+)\s*=/);
+    if (match && match[1] === key) {
+      removeIndex = i;
+      break;
+    }
   }
 
-  await fs.writeFile(envPath, updatedLines.join("\n"), "utf-8");
+  if (removeIndex === -1) {
+    console.log(
+      chalk.yellow(`${key} not found`)
+    );
+    return;
+  }
 
   console.log(
-    chalk.green(`Removed ${key} from .env`)
+    chalk.yellow(`Remove ${key}? (y/N)`)
+  );
+
+  const confirmed = await askConfirmation("");
+
+  if (!confirmed) {
+    console.log(chalk.yellow("Cancelled"));
+    return;
+  }
+
+  lines.splice(removeIndex, 1);
+  await fs.writeFile(envPath, lines.join("\n"), "utf-8");
+
+  console.log(
+    chalk.green(`Removed ${key}`)
   );
 }
 
 module.exports = {
-  removeCommand
+  removeCommand,
+  askConfirmation,
 };
