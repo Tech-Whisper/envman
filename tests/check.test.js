@@ -19,48 +19,72 @@ describe("envman check command", () => {
     await fs.remove(tempDir);
   });
 
-  test("passes when .env matches .env.example", async () => {
+  test("fails when .env is not in .gitignore", async () => {
     await fs.writeFile(
       path.join(tempDir, ".env"),
-      "FOO=bar\nHELLO=world\n"
+      "API_KEY=secret123\nDB_HOST=localhost\n"
+    );
+
+    await fs.writeFile(
+      path.join(tempDir, ".gitignore"),
+      "node_modules/\n.DS_Store\n"
+    );
+
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+
+    await checkCommand();
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining(".env is not listed in .gitignore")
+    );
+
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Sensitive key detected: API_KEY")
+    );
+
+    errorSpy.mockRestore();
+    logSpy.mockRestore();
+  });
+
+  test("passes when all checks are satisfied", async () => {
+    await fs.writeFile(
+      path.join(tempDir, ".env"),
+      "DB_HOST=localhost\nDB_PORT=5432\n"
+    );
+
+    await fs.writeFile(
+      path.join(tempDir, ".gitignore"),
+      "node_modules/\n.env\n.DS_Store\n"
     );
 
     await fs.writeFile(
       path.join(tempDir, ".env.example"),
-      "FOO=default\nHELLO=default\n"
+      "DB_HOST=localhost\nDB_PORT=5432\n"
     );
 
-    await expect(checkCommand()).resolves.toBeUndefined();
+    const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    await checkCommand();
+
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("All checks passed")
+    );
+
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 
-  test("reports missing and extra keys", async () => {
-    await fs.writeFile(
-      path.join(tempDir, ".env"),
-      "FOO=bar\nEXTRA_KEY=value\n"
-    );
+  test("detects case-insensitive sensitive keys", () => {
+    const { containsSensitiveKey } = require("../src/commands/check");
 
-    await fs.writeFile(
-      path.join(tempDir, ".env.example"),
-      "FOO=default\nMISSING=value\n"
-    );
-
-    await expect(checkCommand()).resolves.toBeUndefined();
-  });
-
-  test("handles missing .env gracefully", async () => {
-    await fs.remove(path.join(tempDir, ".env"));
-
-    await expect(checkCommand()).resolves.toBeUndefined();
-  });
-
-  test("handles missing .env.example gracefully", async () => {
-    await fs.writeFile(
-      path.join(tempDir, ".env"),
-      "FOO=bar\n"
-    );
-
-    await fs.remove(path.join(tempDir, ".env.example"));
-
-    await expect(checkCommand()).resolves.toBeUndefined();
+    expect(containsSensitiveKey("api_key")).toBe(true);
+    expect(containsSensitiveKey("MY_SECRET")).toBe(true);
+    expect(containsSensitiveKey("auth_token")).toBe(true);
+    expect(containsSensitiveKey("DB_PASSWORD")).toBe(true);
+    expect(containsSensitiveKey("PRIVATE_KEY")).toBe(true);
+    expect(containsSensitiveKey("DB_HOST")).toBe(false);
+    expect(containsSensitiveKey("APP_PORT")).toBe(false);
   });
 });
