@@ -91,7 +91,7 @@ async function addCommand(input) {
   const content = await fs.readFile(envPath, "utf-8");
   const lines = content.split("\n");
 
-  let existingIndex = -1;
+  const existingIndices = [];
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -100,12 +100,11 @@ async function addCommand(input) {
     }
     const match = line.match(/^([\w.-]+)\s*=/);
     if (match && match[1] === key) {
-      existingIndex = i;
-      break;
+      existingIndices.push(i);
     }
   }
 
-  if (existingIndex === -1) {
+  if (existingIndices.length === 0) {
     const hasTrailingNewline = content.endsWith("\n");
     const lastEmptyIndex = lines.length - 1;
     if (hasTrailingNewline && lines[lastEmptyIndex] === "") {
@@ -122,14 +121,16 @@ async function addCommand(input) {
     chalk.yellow(`${key} already exists. Overwrite? (y/N)`)
   );
 
-  const confirmed = await askConfirmation("");
+  const confirmed = await askConfirmation();
 
   if (!confirmed) {
     console.log(chalk.yellow("Cancelled"));
     return;
   }
 
-  lines[existingIndex] = `${key}=${value}`;
+  for (const idx of existingIndices) {
+    lines[idx] = `${key}=${value}`;
+  }
   await fs.writeFile(envPath, lines.join("\n"), "utf-8");
   console.log(chalk.green(`Updated ${key}`));
 }
