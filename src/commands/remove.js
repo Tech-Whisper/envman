@@ -1,6 +1,7 @@
 const fs = require("fs-extra");
 const path = require("path");
 const chalk = require("chalk");
+const { normalizeContent, normalizeTrailingNewline } = require("../utils/parseEnv");
 
 /**
  * Validate that the key is a non-empty string
@@ -9,15 +10,6 @@ const chalk = require("chalk");
  */
 function isValidKey(key) {
   return typeof key === "string" && key.trim().length > 0;
-}
-
-/**
- * Ensure content ends with exactly one trailing newline
- * @param {string} content
- * @returns {string}
- */
-function normalizeTrailingNewline(content) {
-  return content.replace(/\n*$/, "") + "\n";
 }
 
 /**
@@ -45,7 +37,7 @@ async function removeCommand(key) {
     return;
   }
 
-  const content = await fs.readFile(envPath, "utf-8");
+  const content = normalizeContent(await fs.readFile(envPath, "utf-8"));
   const lines = content.split("\n");
 
   let removeIndex = -1;

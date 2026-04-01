@@ -92,7 +92,7 @@ describe("envman add command", () => {
       "INLINE=value # comment\nQUOTED=\"value # comment\"\n"
     );
 
-    const { parseEnv } = require("../src/commands/list");
+    const { parseEnv } = require("../src/utils/parseEnv");
     const content = await fs.readFile(path.join(tempDir, ".env"), "utf-8");
     const vars = parseEnv(content);
 
@@ -117,5 +117,20 @@ describe("envman add command", () => {
   test("parseInput trims key but preserves value spaces", () => {
     const result = parseInput("  KEY  =  value  ");
     expect(result).toEqual({ key: "KEY", value: "  value  " });
+  });
+
+  test("CRLF normalization converts to LF", async () => {
+    await fs.writeFile(
+      path.join(tempDir, ".env"),
+      Buffer.from("KEY=1\r\nKEY2=2\r\n")
+    );
+
+    await addCommand("KEY3=3");
+
+    const envPath = path.join(tempDir, ".env");
+    const content = await fs.readFile(envPath, "utf-8");
+
+    expect(content).toBe("KEY=1\nKEY2=2\nKEY3=3\n");
+    expect(content).not.toContain("\r");
   });
 });

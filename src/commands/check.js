@@ -1,28 +1,7 @@
 const fs = require("fs-extra");
 const path = require("path");
 const chalk = require("chalk");
-
-/**
- * Parse .env content into array of keys
- * @param {string} content
- * @returns {string[]}
- */
-function parseEnvKeys(content) {
-  const lines = content.split("\n");
-  const keys = [];
-
-  for (const line of lines) {
-    if (line.trim() === "" || line.trim().startsWith("#")) {
-      continue;
-    }
-    const eqIndex = line.indexOf("=");
-    if (eqIndex !== -1) {
-      keys.push(line.slice(0, eqIndex).trim());
-    }
-  }
-
-  return keys;
-}
+const { parseEnvKeys } = require("../utils/parseEnv");
 
 /**
  * Check if a key name indicates sensitive data
@@ -107,6 +86,5 @@ async function checkCommand() {
 
 module.exports = {
   checkCommand,
-  parseEnvKeys,
   containsSensitiveKey,
 };

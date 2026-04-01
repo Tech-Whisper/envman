@@ -1,69 +1,7 @@
 const fs = require("fs-extra");
 const path = require("path");
 const chalk = require("chalk");
-
-/**
- * Ensure content ends with exactly one trailing newline
- * @param {string} content
- * @returns {string}
- */
-function normalizeTrailingNewline(content) {
-  return content.replace(/\n*$/, "") + "\n";
-}
-
-/**
- * Parse .env content into key-value map
- * @param {string} content
- * @returns {Record<string, string>}
- */
-function parseEnv(content) {
-  const lines = content.split("\n");
-  const result = {};
-
-  for (const line of lines) {
-    if (line.trim() === "" || line.trim().startsWith("#")) {
-      continue;
-    }
-    const eqIndex = line.indexOf("=");
-    if (eqIndex !== -1) {
-      const key = line.slice(0, eqIndex).trim();
-      const value = line.slice(eqIndex + 1);
-      result[key] = value;
-    }
-  }
-
-  return result;
-}
-
-/**
- * Build a KEY=VALUE line string
- * @param {string} key
- * @param {string} value
- * @returns {string}
- */
-function buildLine(key, value) {
-  return `${key}=${value}`;
-}
-
-/**
- * Find the index of a key in the lines array
- * @param {string[]} lines
- * @param {string} key
- * @returns {number}
- */
-function findLineIndex(lines, key) {
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.trim() === "" || line.trim().startsWith("#")) {
-      continue;
-    }
-    const eqIndex = line.indexOf("=");
-    if (eqIndex !== -1 && line.slice(0, eqIndex).trim() === key) {
-      return i;
-    }
-  }
-  return -1;
-}
+const { parseEnvMap, normalizeContent, normalizeTrailingNewline, buildLine, findLineIndex } = require("../utils/parseEnv");
 
 /**
  * Execute sync command
@@ -99,8 +37,8 @@ async function syncCommand(options) {
     return;
   }
 
-  const sourceContent = await fs.readFile(sourcePath, "utf-8");
-  const sourceMap = parseEnv(sourceContent);
+  const sourceContent = normalizeContent(await fs.readFile(sourcePath, "utf-8"));
+  const sourceMap = parseEnvMap(sourceContent);
 
   const targetExists = await fs.pathExists(targetPath);
   let targetContent = "";
@@ -108,8 +46,8 @@ async function syncCommand(options) {
   let targetLines = [];
 
   if (targetExists) {
-    targetContent = await fs.readFile(targetPath, "utf-8");
-    targetMap = parseEnv(targetContent);
+    targetContent = normalizeContent(await fs.readFile(targetPath, "utf-8"));
+    targetMap = parseEnvMap(targetContent);
     targetLines = targetContent.split("\n");
   }
 
@@ -178,7 +116,4 @@ async function syncCommand(options) {
 
 module.exports = {
   syncCommand,
-  parseEnv,
-  buildLine,
-  findLineIndex,
 };

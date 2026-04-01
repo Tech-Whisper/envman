@@ -2,6 +2,7 @@ const fs = require("fs-extra");
 const path = require("path");
 const chalk = require("chalk");
 const readline = require("readline");
+const { normalizeContent, normalizeTrailingNewline } = require("../utils/parseEnv");
 
 /**
  * Parse KEY=value input string
@@ -40,7 +41,7 @@ function parseInput(input) {
 
 /**
  * Prompt user for y/N confirmation
- * @param {string} question
+ * @param {string} prompt
  * @returns {Promise<boolean>}
  */
 function askConfirmation(prompt) {
@@ -66,15 +67,6 @@ function askConfirmation(prompt) {
 }
 
 /**
- * Ensure content ends with exactly one trailing newline
- * @param {string} content
- * @returns {string}
- */
-function normalizeTrailingNewline(content) {
-  return content.replace(/\n*$/, "") + "\n";
-}
-
-/**
  * Execute add command
  * @param {string} input - KEY=VALUE string
  */
@@ -97,7 +89,7 @@ async function addCommand(input) {
     return;
   }
 
-  const content = await fs.readFile(envPath, "utf-8");
+  const content = normalizeContent(await fs.readFile(envPath, "utf-8"));
   const lines = content.split("\n");
 
   const existingIndices = [];
