@@ -6,6 +6,10 @@
   "bin": {
     "envman": "./bin/envman.js"
   },
+  "files": [
+    "bin/",
+    "src/"
+  ],
   "scripts": {
     "test": "jest"
   },
