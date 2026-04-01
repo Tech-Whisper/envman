@@ -12,6 +12,15 @@ function isValidKey(key) {
 }
 
 /**
+ * Ensure content ends with exactly one trailing newline
+ * @param {string} content
+ * @returns {string}
+ */
+function normalizeTrailingNewline(content) {
+  return content.replace(/\n*$/, "") + "\n";
+}
+
+/**
  * Execute remove command
  * @param {string} key - The env key to remove
  */
@@ -61,7 +70,7 @@ async function removeCommand(key) {
   }
 
   lines.splice(removeIndex, 1);
-  await fs.writeFile(envPath, lines.join("\n"), "utf-8");
+  await fs.writeFile(envPath, normalizeTrailingNewline(lines.join("\n")), "utf-8");
 
   console.log(
     chalk.green(`Removed ${key}`)

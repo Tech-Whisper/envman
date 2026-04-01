@@ -43,7 +43,7 @@ function parseInput(input) {
  * @param {string} question
  * @returns {Promise<boolean>}
  */
-function askConfirmation() {
+function askConfirmation(prompt) {
   if (global.__mockAnswer !== undefined) {
     const answer = global.__mockAnswer;
     delete global.__mockAnswer;
@@ -57,12 +57,21 @@ function askConfirmation() {
       output: process.stdout,
     });
 
-    rl.question(question, (answer) => {
+    rl.question(prompt, (answer) => {
       rl.close();
       const normalized = answer.trim().toLowerCase();
       resolve(normalized === "y" || normalized === "yes");
     });
   });
+}
+
+/**
+ * Ensure content ends with exactly one trailing newline
+ * @param {string} content
+ * @returns {string}
+ */
+function normalizeTrailingNewline(content) {
+  return content.replace(/\n*$/, "") + "\n";
 }
 
 /**
@@ -112,7 +121,7 @@ async function addCommand(input) {
     } else {
       lines.push(`${key}=${value}`);
     }
-    await fs.writeFile(envPath, lines.join("\n"), "utf-8");
+    await fs.writeFile(envPath, normalizeTrailingNewline(lines.join("\n")), "utf-8");
     console.log(chalk.green(`Added ${key}`));
     return;
   }
@@ -121,7 +130,7 @@ async function addCommand(input) {
     chalk.yellow(`${key} already exists. Overwrite? (y/N)`)
   );
 
-  const confirmed = await askConfirmation();
+  const confirmed = await askConfirmation("");
 
   if (!confirmed) {
     console.log(chalk.yellow("Cancelled"));
@@ -131,7 +140,7 @@ async function addCommand(input) {
   for (const idx of existingIndices) {
     lines[idx] = `${key}=${value}`;
   }
-  await fs.writeFile(envPath, lines.join("\n"), "utf-8");
+  await fs.writeFile(envPath, normalizeTrailingNewline(lines.join("\n")), "utf-8");
   console.log(chalk.green(`Updated ${key}`));
 }
 

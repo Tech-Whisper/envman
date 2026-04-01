@@ -3,6 +3,26 @@ const path = require("path");
 const chalk = require("chalk");
 
 /**
+ * Strip inline comments from a value, preserving quoted content
+ * @param {string} value
+ * @returns {string}
+ */
+function stripInlineComment(value) {
+  const trimmed = value.trim();
+
+  if (trimmed.startsWith('"') || trimmed.startsWith("'")) {
+    return value;
+  }
+
+  const commentIndex = value.indexOf(" #");
+  if (commentIndex !== -1) {
+    return value.slice(0, commentIndex);
+  }
+
+  return value;
+}
+
+/**
  * Parse .env file content into key-value pairs
  * @param {string} content
  * @returns {Array<{key: string, value: string}>}
@@ -11,19 +31,21 @@ function parseEnv(content) {
   const lines = content.split("\n");
   const result = [];
 
-  const regex = /^\s*([\w.-]+)\s*=\s*(.*)?\s*$/;
-
   for (const line of lines) {
     if (!line || line.trim() === "" || line.trim().startsWith("#")) {
       continue;
     }
 
-    const match = line.match(regex);
-    if (match) {
-      const key = match[1];
-      const value = match[2] || "";
-      result.push({ key, value });
+    const eqIndex = line.indexOf("=");
+    if (eqIndex === -1) {
+      continue;
     }
+
+    const key = line.slice(0, eqIndex).trim();
+    const rawValue = line.slice(eqIndex + 1);
+    const value = stripInlineComment(rawValue);
+
+    result.push({ key, value });
   }
 
   return result;

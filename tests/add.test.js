@@ -38,7 +38,7 @@ describe("envman add command", () => {
   });
 
   test("duplicate key with N does not overwrite", async () => {
-    await fs.writeFile(path.join(tempDir, ".env"), "FOO=bar\nHELLO=world");
+    await fs.writeFile(path.join(tempDir, ".env"), "FOO=bar\nHELLO=world\n");
 
     global.__mockAnswer = "N";
 
@@ -47,7 +47,7 @@ describe("envman add command", () => {
     const envPath = path.join(tempDir, ".env");
     const content = await fs.readFile(envPath, "utf-8");
 
-    expect(content).toBe("FOO=bar\nHELLO=world");
+    expect(content).toBe("FOO=bar\nHELLO=world\n");
   });
 
   test("duplicate key with Y overwrites", async () => {
@@ -58,13 +58,13 @@ describe("envman add command", () => {
     const envPath = path.join(tempDir, ".env");
     const content = await fs.readFile(envPath, "utf-8");
 
-    expect(content).toBe("FOO=updated\nHELLO=world");
+    expect(content).toBe("FOO=updated\nHELLO=world\n");
   });
 
   test("preserves comments and blank lines", async () => {
     await fs.writeFile(
       path.join(tempDir, ".env"),
-      "# db config\nDB_HOST=localhost\n\n# api\nAPI_KEY=abc"
+      "# db config\nDB_HOST=localhost\n\n# api\nAPI_KEY=abc\n"
     );
 
     global.__mockAnswer = "Y";
@@ -74,7 +74,7 @@ describe("envman add command", () => {
     const envPath = path.join(tempDir, ".env");
     const content = await fs.readFile(envPath, "utf-8");
 
-    expect(content).toBe("# db config\nDB_HOST=newhost\n\n# api\nAPI_KEY=abc");
+    expect(content).toBe("# db config\nDB_HOST=newhost\n\n# api\nAPI_KEY=abc\n");
   });
 
   test("allows empty value KEY=", async () => {
@@ -83,7 +83,24 @@ describe("envman add command", () => {
     const envPath = path.join(tempDir, ".env");
     const content = await fs.readFile(envPath, "utf-8");
 
-    expect(content).toContain("EMPTY_VAL=");
+    expect(content).toContain("EMPTY_VAL=\n");
+  });
+
+  test("inline comment parsing", async () => {
+    await fs.writeFile(
+      path.join(tempDir, ".env"),
+      "INLINE=value # comment\nQUOTED=\"value # comment\"\n"
+    );
+
+    const { parseEnv } = require("../src/commands/list");
+    const content = await fs.readFile(path.join(tempDir, ".env"), "utf-8");
+    const vars = parseEnv(content);
+
+    const inlineVar = vars.find(v => v.key === "INLINE");
+    const quotedVar = vars.find(v => v.key === "QUOTED");
+
+    expect(inlineVar.value).toBe("value");
+    expect(quotedVar.value).toBe("\"value # comment\"");
   });
 
   test("parseInput rejects invalid input", () => {

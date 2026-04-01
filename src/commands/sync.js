@@ -3,6 +3,15 @@ const path = require("path");
 const chalk = require("chalk");
 
 /**
+ * Ensure content ends with exactly one trailing newline
+ * @param {string} content
+ * @returns {string}
+ */
+function normalizeTrailingNewline(content) {
+  return content.replace(/\n*$/, "") + "\n";
+}
+
+/**
  * Parse .env content into key-value map
  * @param {string} content
  * @returns {Record<string, string>}
@@ -160,7 +169,7 @@ async function syncCommand(options) {
     synced++;
   }
 
-  await fs.writeFile(targetPath, targetLines.join("\n"), "utf-8");
+  await fs.writeFile(targetPath, normalizeTrailingNewline(targetLines.join("\n")), "utf-8");
 
   console.log(
     chalk.green(`Synced ${synced} variables`)
