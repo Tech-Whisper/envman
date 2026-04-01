@@ -3,82 +3,173 @@ const path = require("path");
 const chalk = require("chalk");
 
 /**
- * Execute sync command
- * Syncs .env with .env.example, adding missing keys
+ * Parse .env content into key-value map
+ * @param {string} content
+ * @returns {Record<string, string>}
  */
-async function syncCommand() {
-  const envPath = path.join(process.cwd(), ".env");
-  const examplePath = path.join(process.cwd(), ".env.example");
+function parseEnv(content) {
+  const lines = content.split("\n");
+  const result = {};
 
-  const envExists = await fs.pathExists(envPath);
-  const exampleExists = await fs.pathExists(examplePath);
-
-  if (!envExists) {
-    console.error(
-      chalk.red("No .env found. Run: envman add KEY=value")
-    );
-    process.exit(1);
-  }
-
-  if (!exampleExists) {
-    console.error(
-      chalk.red("No .env.example found")
-    );
-    process.exit(1);
-  }
-
-  const envContent = await fs.readFile(envPath, "utf-8");
-  const exampleContent = await fs.readFile(examplePath, "utf-8");
-
-  const parseEnv = (content) => {
-    const lines = content.split("\n");
-    const result = {};
-    for (const line of lines) {
-      const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
-      if (match && !line.trim().startsWith("#")) {
-        result[match[1]] = match[2] || "";
-      }
-    }
-    return result;
-  };
-
-  const envVars = parseEnv(envContent);
-  const exampleVars = parseEnv(exampleContent);
-
-  let added = 0;
-
-  for (const [key, value] of Object.entries(exampleVars)) {
-    if (!(key in envVars)) {
-      envVars[key] = value;
-      added++;
-    }
-  }
-
-  const outputLines = [];
-  for (const line of exampleContent.split("\n")) {
-    if (line.trim().startsWith("#") || line.trim() === "") {
-      outputLines.push(line);
+  for (const line of lines) {
+    if (line.trim() === "" || line.trim().startsWith("#")) {
       continue;
     }
-    const match = line.match(/^\s*([\w.-]+)\s*=/);
-    if (match && match[1] in envVars) {
-      outputLines.push(`${match[1]}=${envVars[match[1]]}`);
+    const eqIndex = line.indexOf("=");
+    if (eqIndex !== -1) {
+      const key = line.slice(0, eqIndex).trim();
+      const value = line.slice(eqIndex + 1);
+      result[key] = value;
     }
   }
 
-  for (const [key, value] of Object.entries(envVars)) {
-    if (!exampleContent.includes(`${key}=`)) {
-      outputLines.push(`${key}=${value}`);
+  return result;
+}
+
+/**
+ * Build a KEY=VALUE line string
+ * @param {string} key
+ * @param {string} value
+ * @returns {string}
+ */
+function buildLine(key, value) {
+  return `${key}=${value}`;
+}
+
+/**
+ * Find the index of a key in the lines array
+ * @param {string[]} lines
+ * @param {string} key
+ * @returns {number}
+ */
+function findLineIndex(lines, key) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim() === "" || line.trim().startsWith("#")) {
+      continue;
+    }
+    const eqIndex = line.indexOf("=");
+    if (eqIndex !== -1 && line.slice(0, eqIndex).trim() === key) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+/**
+ * Execute sync command
+ * @param {{to: string, overwrite: boolean}} options
+ */
+async function syncCommand(options) {
+  if (!options || !options.to) {
+    console.error(
+      chalk.red("Required: --to <targetPath>")
+    );
+    return;
+  }
+
+  const sourcePath = path.join(process.cwd(), ".env");
+  const targetDir = path.resolve(options.to);
+  const targetPath = path.join(targetDir, ".env");
+
+  const sourceExists = await fs.pathExists(sourcePath);
+
+  if (!sourceExists) {
+    console.error(
+      chalk.red("No .env found in current folder")
+    );
+    return;
+  }
+
+  const targetDirExists = await fs.pathExists(targetDir);
+
+  if (!targetDirExists) {
+    console.error(
+      chalk.red("Target folder not found")
+    );
+    return;
+  }
+
+  const sourceContent = await fs.readFile(sourcePath, "utf-8");
+  const sourceMap = parseEnv(sourceContent);
+
+  const targetExists = await fs.pathExists(targetPath);
+  let targetContent = "";
+  let targetMap = {};
+  let targetLines = [];
+
+  if (targetExists) {
+    targetContent = await fs.readFile(targetPath, "utf-8");
+    targetMap = parseEnv(targetContent);
+    targetLines = targetContent.split("\n");
+  }
+
+  const diffs = [];
+
+  for (const key of Object.keys(sourceMap)) {
+    if (!(key in targetMap)) {
+      diffs.push({ key, action: "ADD" });
+    } else if (options.overwrite) {
+      diffs.push({ key, action: "OVERWRITE" });
+    } else {
+      diffs.push({ key, action: "SKIP" });
     }
   }
 
-  await fs.writeFile(envPath, outputLines.join("\n"), "utf-8");
+  for (const diff of diffs) {
+    if (diff.action === "SKIP") {
+      console.log(
+        chalk.yellow(`SKIP ${diff.key} (exists)`)
+      );
+    } else {
+      console.log(
+        chalk.green(`${diff.action} ${diff.key}`)
+      );
+    }
+  }
+
+  if (diffs.length === 0) {
+    console.log(
+      chalk.yellow("No changes needed")
+    );
+    return;
+  }
+
+  let synced = 0;
+
+  for (const diff of diffs) {
+    if (diff.action === "SKIP") {
+      continue;
+    }
+
+    const value = sourceMap[diff.key];
+    const existingIndex = findLineIndex(targetLines, diff.key);
+
+    if (existingIndex !== -1) {
+      targetLines[existingIndex] = buildLine(diff.key, value);
+    } else {
+      const hasTrailingNewline = targetContent.endsWith("\n");
+      const lastEmptyIndex = targetLines.length - 1;
+      if (hasTrailingNewline && targetLines[lastEmptyIndex] === "") {
+        targetLines.splice(lastEmptyIndex, 0, buildLine(diff.key, value));
+      } else {
+        targetLines.push(buildLine(diff.key, value));
+      }
+    }
+
+    synced++;
+  }
+
+  await fs.writeFile(targetPath, targetLines.join("\n"), "utf-8");
 
   console.log(
-    chalk.green(`Synced .env with .env.example (${added} keys added)`)
+    chalk.green(`Synced ${synced} variables`)
   );
 }
 
 module.exports = {
-  syncCommand
+  syncCommand,
+  parseEnv,
+  buildLine,
+  findLineIndex,
 };

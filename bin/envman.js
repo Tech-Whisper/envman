@@ -31,8 +31,10 @@ program
 
 program
   .command("sync")
-  .description("Sync .env with .env.example")
-  .action(syncCommand);
+  .description("Sync .env to another project folder")
+  .requiredOption("--to <targetPath>", "Target folder path")
+  .option("--overwrite", "Overwrite existing keys in target")
+  .action((opts) => syncCommand(opts));
 
 program
   .command("check")

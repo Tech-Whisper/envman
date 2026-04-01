@@ -5,38 +5,60 @@ const os = require("os");
 const { syncCommand } = require("../src/commands/sync");
 
 describe("envman sync command", () => {
-  let tempDir;
+  let sourceDir;
+  let targetDir;
   let originalCwd;
 
   beforeAll(async () => {
     originalCwd = process.cwd();
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "envman-sync-"));
-    process.chdir(tempDir);
-
-    await fs.writeFile(
-      path.join(tempDir, ".env"),
-      "FOO=bar\nEXISTING=value\n"
-    );
-
-    await fs.writeFile(
-      path.join(tempDir, ".env.example"),
-      "FOO=default\nNEW_KEY=\nANOTHER=\n"
-    );
+    const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), "envman-sync-"));
+    sourceDir = path.join(tmpRoot, "source");
+    targetDir = path.join(tmpRoot, "target");
+    await fs.mkdir(sourceDir);
+    await fs.mkdir(targetDir);
+    process.chdir(sourceDir);
   });
 
   afterAll(async () => {
     process.chdir(originalCwd);
-    await fs.remove(tempDir);
+    await fs.remove(path.dirname(sourceDir));
   });
 
-  test("should sync missing keys from .env.example", async () => {
-    await syncCommand();
+  test("basic sync adds missing keys to target", async () => {
+    await fs.writeFile(
+      path.join(sourceDir, ".env"),
+      "A=source_a\nB=source_b\n"
+    );
 
-    const envPath = path.join(tempDir, ".env");
-    const content = await fs.readFile(envPath, "utf-8");
+    await fs.writeFile(
+      path.join(targetDir, ".env"),
+      "A=target_a\n"
+    );
 
-    expect(content).toContain("FOO=bar");
-    expect(content).toContain("NEW_KEY=");
-    expect(content).toContain("ANOTHER=");
+    await syncCommand({ to: targetDir, overwrite: false });
+
+    const targetPath = path.join(targetDir, ".env");
+    const content = await fs.readFile(targetPath, "utf-8");
+
+    expect(content).toBe("A=target_a\nB=source_b\n");
+  });
+
+  test("sync with --overwrite replaces existing keys", async () => {
+    await fs.writeFile(
+      path.join(sourceDir, ".env"),
+      "A=new_value\n"
+    );
+
+    await fs.writeFile(
+      path.join(targetDir, ".env"),
+      "A=old_value\n"
+    );
+
+    await syncCommand({ to: targetDir, overwrite: true });
+
+    const targetPath = path.join(targetDir, ".env");
+    const content = await fs.readFile(targetPath, "utf-8");
+
+    expect(content).toBe("A=new_value\n");
   });
 });
