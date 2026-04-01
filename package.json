@@ -1,0 +1,23 @@
+{
+  "name": "envman",
+  "version": "1.0.0",
+  "description": "CLI tool for managing .env files locally",
+  "main": "bin/envman.js",
+  "bin": {
+    "envman": "./bin/envman.js"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": ["env", "dotenv", "cli", "config"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.0.0",
+    "fs-extra": "^11.2.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
