@@ -62,6 +62,32 @@ describe("envman sync command", () => {
     expect(content).toBe("A=new_value\n");
   });
 
+  test("sync --dry-run does not write changes", async () => {
+    await fs.writeFile(
+      path.join(sourceDir, ".env"),
+      "A=1\nC=new\n"
+    );
+
+    await fs.writeFile(
+      path.join(targetDir, ".env"),
+      "A=old\nB=keep\n"
+    );
+
+    const beforeContent = await fs.readFile(
+      path.join(targetDir, ".env"),
+      "utf-8"
+    );
+
+    await syncCommand({ to: targetDir, overwrite: false, dryRun: true });
+
+    const afterContent = await fs.readFile(
+      path.join(targetDir, ".env"),
+      "utf-8"
+    );
+
+    expect(afterContent).toBe(beforeContent);
+  });
+
   test("fails cleanly when source .env is missing", async () => {
     await fs.remove(path.join(sourceDir, ".env"));
 

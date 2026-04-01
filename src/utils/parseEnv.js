@@ -1,5 +1,5 @@
 /**
- * Normalize line endings and ensure exactly one trailing newline
+ * Normalize line endings: \r\n → \n, lone \r → \n
  * @param {string} content
  * @returns {string}
  */
@@ -25,6 +25,26 @@ function stripInlineComment(value) {
   }
 
   return value;
+}
+
+/**
+ * Check if a key name suggests sensitive data
+ * @param {string} key
+ * @returns {boolean}
+ */
+function isSensitiveKey(key) {
+  const upper = key.toUpperCase();
+  const patterns = ["API_KEY", "SECRET", "TOKEN", "PASSWORD", "PRIVATE"];
+  return patterns.some(p => upper.includes(p));
+}
+
+/**
+ * Mask a sensitive value for display
+ * @param {string} value
+ * @returns {string}
+ */
+function maskValue(value) {
+  return "******";
 }
 
 /**
@@ -120,37 +140,15 @@ function findLineIndex(lines, key) {
   return -1;
 }
 
-/**
- * Read and normalize .env file content
- * @param {typeof import('fs-extra')} fs
- * @param {string} filePath
- * @returns {Promise<string>}
- */
-async function readEnvFile(fs, filePath) {
-  const content = await fs.readFile(filePath, "utf-8");
-  return normalizeContent(content);
-}
-
-/**
- * Write .env file with normalized trailing newline
- * @param {typeof import('fs-extra')} fs
- * @param {string} filePath
- * @param {string} content
- * @returns {Promise<void>}
- */
-async function writeEnvFile(fs, filePath, content) {
-  await fs.writeFile(filePath, normalizeTrailingNewline(content), "utf-8");
-}
-
 module.exports = {
   normalizeContent,
   parseEnv,
   parseEnvMap,
   parseEnvKeys,
   stripInlineComment,
+  isSensitiveKey,
+  maskValue,
   normalizeTrailingNewline,
   buildLine,
   findLineIndex,
-  readEnvFile,
-  writeEnvFile,
 };

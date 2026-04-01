@@ -5,7 +5,7 @@ const { parseEnvMap, normalizeContent, normalizeTrailingNewline, buildLine, find
 
 /**
  * Execute sync command
- * @param {{to: string, overwrite: boolean}} options
+ * @param {{to: string, overwrite: boolean, dryRun: boolean}} options
  */
 async function syncCommand(options) {
   if (!options || !options.to) {
@@ -78,6 +78,13 @@ async function syncCommand(options) {
   if (diffs.length === 0) {
     console.log(
       chalk.yellow("No changes needed")
+    );
+    return;
+  }
+
+  if (options.dryRun) {
+    console.log(
+      chalk.yellow("\nDry run — no changes written")
     );
     return;
   }

@@ -11,12 +11,13 @@ const program = new Command();
 
 program
   .name("envman")
-  .description("CLI to manage .env files")
+  .description("CLI to manage .env files securely")
   .version("1.0.0");
 
 program
   .command("list")
-  .description("List all environment variables")
+  .description("List all environment variables (sensitive values masked)")
+  .option("--show-values", "Show sensitive values instead of ******")
   .action(listCommand);
 
 program
@@ -34,11 +35,12 @@ program
   .description("Sync .env to another project folder")
   .requiredOption("--to <targetPath>", "Target folder path")
   .option("--overwrite", "Overwrite existing keys in target")
-  .action((opts) => syncCommand(opts));
+  .option("--dry-run", "Preview changes without writing")
+  .action(syncCommand);
 
 program
   .command("check")
-  .description("Check .env against .env.example")
+  .description("Check .env for security issues and best practices")
   .action(checkCommand);
 
 program.parse(process.argv);

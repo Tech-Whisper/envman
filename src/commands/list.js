@@ -1,15 +1,23 @@
 const fs = require("fs-extra");
 const path = require("path");
 const chalk = require("chalk");
-const { parseEnv } = require("../utils/parseEnv");
+const { parseEnv, isSensitiveKey, maskValue } = require("../utils/parseEnv");
 
 /**
  * Format and print env variables as a table
  * @param {Array<{key: string, value: string}>} vars
+ * @param {boolean} showValues
  */
-function printTable(vars) {
-  const keyWidth = Math.max(...vars.map(v => v.key.length), 3);
-  const valueWidth = Math.max(...vars.map(v => v.value.length), 5);
+function printTable(vars, showValues) {
+  const maskedVars = vars.map(v => {
+    if (isSensitiveKey(v.key) && !showValues) {
+      return { key: v.key, value: maskValue(v.value) };
+    }
+    return v;
+  });
+
+  const keyWidth = Math.max(...maskedVars.map(v => v.key.length), 3);
+  const valueWidth = Math.max(...maskedVars.map(v => v.value.length), 5);
 
   const header =
     chalk.green(
@@ -18,7 +26,7 @@ function printTable(vars) {
 
   console.log(header);
 
-  for (const v of vars) {
+  for (const v of maskedVars) {
     const row =
       `${v.key.padEnd(keyWidth)} | ${v.value.padEnd(valueWidth)}`;
     console.log(chalk.white(row));
@@ -31,8 +39,9 @@ function printTable(vars) {
 
 /**
  * Execute list command
+ * @param {{showValues: boolean}} opts
  */
-async function listCommand() {
+async function listCommand(opts) {
   const envPath = path.join(process.cwd(), ".env");
 
   const exists = await fs.pathExists(envPath);
@@ -48,7 +57,7 @@ async function listCommand() {
 
   const vars = parseEnv(content);
 
-  printTable(vars);
+  printTable(vars, opts && opts.showValues);
 }
 
 module.exports = {

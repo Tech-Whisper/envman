@@ -72,4 +72,39 @@ describe("envman list command", () => {
 
     logSpy.mockRestore();
   });
+
+  test("masks sensitive keys by default", async () => {
+    await fs.writeFile(
+      path.join(tempDir, ".env"),
+      "DB_HOST=localhost\nAPI_KEY=secret123\n"
+    );
+
+    const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+
+    await listCommand();
+
+    const calls = logSpy.mock.calls.flat().join("\n");
+    expect(calls).toContain("******");
+    expect(calls).toContain("API_KEY");
+    expect(calls).not.toContain("secret123");
+
+    logSpy.mockRestore();
+  });
+
+  test("shows values with --show-values flag", async () => {
+    await fs.writeFile(
+      path.join(tempDir, ".env"),
+      "API_KEY=secret123\n"
+    );
+
+    const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+
+    await listCommand({ showValues: true });
+
+    const calls = logSpy.mock.calls.flat().join("\n");
+    expect(calls).toContain("secret123");
+    expect(calls).not.toContain("******");
+
+    logSpy.mockRestore();
+  });
 });

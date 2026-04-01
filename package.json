@@ -1,7 +1,7 @@
 {
   "name": "envman",
   "version": "1.0.0",
-  "description": "CLI tool for managing .env files locally",
+  "description": "Secure CLI tool for managing .env files with validation, sync, and secret masking",
   "main": "bin/envman.js",
   "bin": {
     "envman": "./bin/envman.js"
@@ -13,7 +13,10 @@
     "env",
     "dotenv",
     "cli",
-    "config"
+    "config",
+    "environment",
+    "secret",
+    "security"
   ],
   "author": "",
   "license": "MIT",
