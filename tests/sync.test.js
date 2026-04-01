@@ -61,4 +61,35 @@ describe("envman sync command", () => {
 
     expect(content).toBe("A=new_value\n");
   });
+
+  test("fails cleanly when source .env is missing", async () => {
+    await fs.remove(path.join(sourceDir, ".env"));
+
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    await syncCommand({ to: targetDir, overwrite: false });
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("No .env found")
+    );
+
+    errorSpy.mockRestore();
+  });
+
+  test("fails cleanly with invalid target path", async () => {
+    await fs.writeFile(
+      path.join(sourceDir, ".env"),
+      "A=value\n"
+    );
+
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    await syncCommand({ to: "/nonexistent/path/xyz", overwrite: false });
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Target folder not found")
+    );
+
+    errorSpy.mockRestore();
+  });
 });

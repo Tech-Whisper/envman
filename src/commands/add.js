@@ -43,7 +43,7 @@ function parseInput(input) {
  * @param {string} question
  * @returns {Promise<boolean>}
  */
-function askConfirmation(question) {
+function askConfirmation() {
   if (global.__mockAnswer !== undefined) {
     const answer = global.__mockAnswer;
     delete global.__mockAnswer;

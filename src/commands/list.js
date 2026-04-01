@@ -65,9 +65,9 @@ async function listCommand() {
 
   if (!exists) {
     console.error(
-      chalk.red("No .env found. Run: envman add KEY=value")
+      chalk.red("No .env found")
     );
-    process.exit(1);
+    return;
   }
 
   const content = await fs.readFile(envPath, "utf-8");

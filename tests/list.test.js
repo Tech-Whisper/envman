@@ -10,18 +10,8 @@ describe("envman list command", () => {
 
   beforeAll(async () => {
     originalCwd = process.cwd();
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "envman-"));
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "envman-list-"));
     process.chdir(tempDir);
-
-    const envContent = `
-# comment
-FOO=bar
-HELLO=world
-
-TEST=value
-`;
-
-    await fs.writeFile(path.join(tempDir, ".env"), envContent);
   });
 
   afterAll(async () => {
@@ -29,7 +19,57 @@ TEST=value
     await fs.remove(tempDir);
   });
 
-  test("should list variables without throwing", async () => {
-    await expect(listCommand()).resolves.not.toThrow();
+  test("lists variables with correct output", async () => {
+    await fs.writeFile(
+      path.join(tempDir, ".env"),
+      "# comment\nFOO=bar\nHELLO=world\n\nTEST=value\n"
+    );
+
+    const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+
+    await listCommand();
+
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("FOO")
+    );
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("bar")
+    );
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("3 variables found")
+    );
+
+    logSpy.mockRestore();
+  });
+
+  test("handles missing .env gracefully", async () => {
+    await fs.remove(path.join(tempDir, ".env"));
+
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    await listCommand();
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("No .env found")
+    );
+
+    errorSpy.mockRestore();
+  });
+
+  test("ignores comments and blank lines", async () => {
+    await fs.writeFile(
+      path.join(tempDir, ".env"),
+      "# only comment\n\n# another comment\n"
+    );
+
+    const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+
+    await listCommand();
+
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("0 variables found")
+    );
+
+    logSpy.mockRestore();
   });
 });
