@@ -1,71 +1,116 @@
 const fs = require("fs-extra");
 const path = require("path");
 const chalk = require("chalk");
+const readline = require("readline");
+
+/**
+ * Parse KEY=value input string
+ * @param {string} input
+ * @returns {{key: string, value: string}}
+ */
+function parseInput(input) {
+  const eqIndex = input.indexOf("=");
+
+  if (eqIndex === -1) {
+    throw new Error("Invalid format. Use: envman add KEY=value");
+  }
+
+  const key = input.slice(0, eqIndex).trim();
+  const value = input.slice(eqIndex + 1);
+
+  if (!key) {
+    throw new Error("Key cannot be empty");
+  }
+
+  return { key, value };
+}
+
+/**
+ * Prompt user for y/N confirmation
+ * @param {string} question
+ * @returns {Promise<boolean>}
+ */
+function askConfirmation(question) {
+  if (global.__mockAnswer !== undefined) {
+    const answer = global.__mockAnswer;
+    delete global.__mockAnswer;
+    const normalized = answer.trim().toLowerCase();
+    return Promise.resolve(normalized === "y" || normalized === "yes");
+  }
+
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+
+    rl.question(question, (answer) => {
+      rl.close();
+      const normalized = answer.trim().toLowerCase();
+      resolve(normalized === "y" || normalized === "yes");
+    });
+  });
+}
 
 /**
  * Execute add command
  * @param {string} input - KEY=VALUE string
  */
 async function addCommand(input) {
+  const { key, value } = parseInput(input);
+
   const envPath = path.join(process.cwd(), ".env");
-
-  const eqIndex = input.indexOf("=");
-
-  if (eqIndex === -1) {
-    console.error(
-      chalk.red("Invalid format. Use: envman add KEY=value")
-    );
-    process.exit(1);
-  }
-
-  const key = input.slice(0, eqIndex).trim();
-  const value = input.slice(eqIndex + 1).trim();
-
-  if (!key) {
-    console.error(
-      chalk.red("Key cannot be empty")
-    );
-    process.exit(1);
-  }
 
   const exists = await fs.pathExists(envPath);
 
-  let content = exists
-    ? await fs.readFile(envPath, "utf-8")
-    : "";
+  if (!exists) {
+    await fs.writeFile(envPath, `${key}=${value}\n`, "utf-8");
+    console.log(chalk.green(`Added ${key}`));
+    return;
+  }
 
+  const content = await fs.readFile(envPath, "utf-8");
   const lines = content.split("\n");
-  let found = false;
 
-  const updatedLines = lines.map(line => {
-    const match = line.match(/^\s*([\w.-]+)\s*=/);
+  let existingIndex = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim() === "" || line.trim().startsWith("#")) {
+      continue;
+    }
+    const match = line.match(/^([\w.-]+)\s*=/);
     if (match && match[1] === key) {
-      found = true;
-      return `${key}=${value}`;
+      existingIndex = i;
+      break;
     }
-    return line;
-  });
-
-  if (!found) {
-    if (content && !content.endsWith("\n")) {
-      updatedLines.push("");
-    }
-    updatedLines.push(`${key}=${value}`);
   }
 
-  await fs.writeFile(envPath, updatedLines.join("\n"), "utf-8");
-
-  if (found) {
-    console.log(
-      chalk.green(`Updated ${key} in .env`)
-    );
-  } else {
-    console.log(
-      chalk.green(`Added ${key} to .env`)
-    );
+  if (existingIndex === -1) {
+    lines.push(`${key}=${value}`);
+    await fs.writeFile(envPath, lines.join("\n"), "utf-8");
+    console.log(chalk.green(`Added ${key}`));
+    return;
   }
+
+  console.log(
+    chalk.yellow(`${key} already exists. Overwrite? (y/N)`)
+  );
+
+  const confirmed = await askConfirmation("");
+
+  if (!confirmed) {
+    console.log(chalk.yellow("Cancelled"));
+    return;
+  }
+
+  lines[existingIndex] = `${key}=${value}`;
+  await fs.writeFile(envPath, lines.join("\n"), "utf-8");
+  console.log(chalk.green(`Updated ${key}`));
 }
 
 module.exports = {
-  addCommand
+  addCommand,
+  parseInput,
+  askConfirmation,
 };

@@ -19,24 +19,40 @@ describe("envman add command", () => {
     await fs.remove(tempDir);
   });
 
-  test("should add a new variable to .env", async () => {
-    await addCommand("NEW_KEY=new_value");
+  test("adds new key", async () => {
+    await addCommand("FOO=bar");
 
     const envPath = path.join(tempDir, ".env");
     const content = await fs.readFile(envPath, "utf-8");
 
-    expect(content).toContain("NEW_KEY=new_value");
+    expect(content).toContain("FOO=bar");
   });
 
-  test("should update existing variable", async () => {
-    await addCommand("EXISTING=old");
-    await addCommand("EXISTING=new");
+  test("duplicate key with N does not overwrite", async () => {
+    await fs.writeFile(path.join(tempDir, ".env"), "FOO=bar\n");
+
+    global.__mockAnswer = "N";
+
+    await addCommand("FOO=new_value");
 
     const envPath = path.join(tempDir, ".env");
     const content = await fs.readFile(envPath, "utf-8");
 
-    const lines = content.split("\n").filter(l => l.startsWith("EXISTING="));
-    expect(lines).toHaveLength(1);
-    expect(lines[0]).toBe("EXISTING=new");
+    expect(content).toContain("FOO=bar");
+    expect(content).not.toContain("FOO=new_value");
+  });
+
+  test("duplicate key with Y overwrites", async () => {
+    await fs.writeFile(path.join(tempDir, ".env"), "FOO=bar\n");
+
+    global.__mockAnswer = "Y";
+
+    await addCommand("FOO=new_value");
+
+    const envPath = path.join(tempDir, ".env");
+    const content = await fs.readFile(envPath, "utf-8");
+
+    expect(content).toContain("FOO=new_value");
+    expect(content).not.toContain("FOO=bar");
   });
 });
