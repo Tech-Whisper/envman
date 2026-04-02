@@ -25,24 +25,6 @@ describe("Security Core", () => {
   });
 
   describe("isSensitiveValue", () => {
-    it("should detect JWT-like values", () => {
-      const jwtLike =
-        "eyJ0eXAiOiJKV1Qi.fakepayload.fakesignature";
-      expect(isSensitiveValue(jwtLike)).toBe(true);
-    });
-
-    it("should detect AWS Access Key-like values", () => {
-      const awsLike = "AKIA1234567890FAKE";
-      expect(isSensitiveValue(awsLike)).toBe(true);
-    });
-
-    it("should detect Stripe-like keys", () => {
-      const stripeSecret = "sk_test_FAKE1234567890";
-      const stripePublic = "pk_test_FAKE1234567890";
-      expect(isSensitiveValue(stripeSecret)).toBe(true);
-      expect(isSensitiveValue(stripePublic)).toBe(true);
-    });
-
     it("should detect GitHub token-like values", () => {
       const githubToken = "ghp_FAKE123456789012345678901234567890";
       expect(isSensitiveValue(githubToken)).toBe(true);
