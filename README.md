@@ -1,182 +1,62 @@
 # 🛡️ Envman — Secure Environment Manager
 
-> A modern CLI tool to manage `.env` files with encryption, secret scanning, and automated health checks.
+<p align="center">
+  <img src="https://img.shields.io/npm/v/@fronik/envman?style=for-the-badge" />
+  <img src="https://img.shields.io/npm/dt/@fronik/envman?style=for-the-badge" />
+  <img src="https://img.shields.io/github/license/Tech-Whisper/envman?style=for-the-badge" />
+  <img src="https://img.shields.io/github/stars/Tech-Whisper/envman?style=for-the-badge" />
+</p>
 
 <p align="center">
-  <img src="docs/init.png" width="800"/>
+  <b>🔐 Secure • ⚡ Fast • 🧠 Smart Env Management CLI</b>
 </p>
+
+> A modern CLI to manage `.env` files with encryption, secret scanning, backups, and health checks.
 
 ---
 
-## 🚀 Features
+## 🚀 Overview
 
-* 🔐 AES-256 encryption for `.env` files
-* 🔍 Detect exposed secrets (API keys, JWTs, DB URLs)
-* 🩺 Doctor command for environment health checks
-* 📦 Automatic backups before every change
-* 📄 Generate `.env.example` safely
-* 📋 Interactive CLI mode
-* ⚡ Fast, lightweight, and developer-friendly
+Envman is a security-first CLI tool for managing `.env` files safely and efficiently.
+
+It helps developers:
+
+- 🔐 encrypt sensitive environment variables
+- 🔍 detect exposed secrets before they leak
+- 🩺 run health checks on `.env` setups
+- 📦 create backups before changes
+- 📄 generate `.env.example` files for safer sharing
+
+---
+
+## ✨ Features
+
+- AES-256 encryption for `.env` files
+- Secret scanning for API keys, tokens, and credentials
+- Doctor command for environment validation
+- Automatic backups before edits
+- `.env.example` generation
+- Interactive CLI mode
+- Clean and developer-friendly workflow
+
+---
+
+## 🤔 Why Envman?
+
+Managing `.env` files is usually:
+
+- insecure
+- messy
+- hard to maintain
+- easy to break
+
+Envman solves this by giving you a clean workflow for security and environment management in one CLI.
 
 ---
 
 ## 📦 Installation
 
-```bash
-npm install -g @fronik/envman
-```
-
-Or use without installing:
+Install globally:
 
 ```bash
-npx @fronik/envman
-```
-
----
-
-## ⚡ Quick Start
-
-### Initialize project
-
-```bash
-envman init
-```
-
----
-
-### Add variables
-
-```bash
-envman add DB_PASSWORD=mySecretPass
-```
-
----
-
-### List variables
-
-```bash
-envman list
-```
-
-<p align="center">
-  <img src="docs/list.png" width="800"/>
-</p>
-
----
-
-### Scan for secrets
-
-```bash
-envman scan
-```
-
----
-
-### Run doctor check
-
-```bash
-envman doctor
-```
-
----
-
-### Encrypt `.env`
-
-```bash
-envman encrypt
-```
-
-<p align="center">
-  <img src="docs/encrypt.png" width="800"/>
-</p>
-
----
-
-### Decrypt `.env`
-
-```bash
-envman decrypt
-```
-
----
-
-### Generate `.env.example`
-
-```bash
-envman generate
-```
-
----
-
-## 📸 Demo
-
-<p align="center">
-  <img src="docs/demo.gif" width="800"/>
-</p>
-
----
-
-## 📂 Project Structure
-
-```
-envman/
-├── bin/
-├── src/
-│   ├── commands/
-│   ├── core/
-│   └── utils/
-├── docs/
-├── test/
-├── package.json
-└── README.md
-```
-
----
-
-## 🔐 Security
-
-* AES-256-CBC encryption
-* Secure key storage via `.envmanrc`
-* Prevents accidental exposure of secrets
-* Automatic backup system
-
----
-
-## 🧪 Testing
-
-```bash
-npm test
-```
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome!
-
-1. Fork the repo
-2. Create a new branch
-3. Commit your changes
-4. Open a Pull Request
-
----
-
-## 📜 License
-
-MIT License
-
----
-
-## ⭐ Support
-
-If you like this project:
-
-* ⭐ Star the repo
-* 🐛 Report issues
-* 🚀 Share with developers
-
----
-
-<p align="center">
-  Built with ❤️ by <b>Fronik</b>
-</p>
+npm install -g @fronik/envman or npx @fronik/envman
