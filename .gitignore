@@ -1,6 +1,5 @@
-node_modules/
+coverage/
+.envmanrc
 .env
-.env.*
-!.env.example
-.DS_Store
-*.log
+.env.enc
+node_modules/
