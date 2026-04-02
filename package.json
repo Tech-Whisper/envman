@@ -1,6 +1,6 @@
 {
   "name": "@fronik/envman",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "An elite, security-first CLI for environment variable management with encryption, safe sync, masking, and health diagnostics.",
   "main": "bin/envman.js",
   "bin": {
