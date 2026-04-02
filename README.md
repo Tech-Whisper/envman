@@ -1,6 +1,5 @@
 # 🛡️ envman
 ![npm](https://img.shields.io/npm/v/@fronik/envman)
-![downloads](https://img.shields.io/npm/dw/@fronik/envman)
 ![license](https://img.shields.io/npm/l/@fronik/envman)
 
 A secure CLI for managing environment variables with encryption, scanning, and diagnostics.
