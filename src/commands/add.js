@@ -3,27 +3,11 @@ const path = require("path");
 const chalk = require("chalk");
 const readline = require("readline");
 const { normalizeContent, normalizeTrailingNewline } = require("../utils/parseEnv");
-const { createBackup } = require("../core/backup");
+const { createBackup, pruneBackups } = require("../core/backup");
 const { trackUsage } = require("../core/telemetry");
-
-function parseInput(input) {
-  if (!input || !input.trim()) {
-    console.error(chalk.red("Invalid format. Use: envman add KEY=value"));
-    return null;
-  }
-  const eqIndex = input.indexOf("=");
-  if (eqIndex === -1) {
-    console.error(chalk.red("Invalid format. Use: envman add KEY=value"));
-    return null;
-  }
-  const key = input.slice(0, eqIndex).trim();
-  const value = input.slice(eqIndex + 1);
-  if (!key) {
-    console.error(chalk.red("Key cannot be empty"));
-    return null;
-  }
-  return { key, value };
-}
+const { validateKeyValueInput, isReservedKey } = require("../utils/validator");
+const { resolveEnvPath, resolveEnvFilename, isSafeMode } = require("../utils/fileHandler");
+const logger = require("../utils/logger");
 
 function askConfirmation(prompt) {
   if (global.__mockAnswer !== undefined) {
@@ -49,13 +33,24 @@ function askConfirmation(prompt) {
 async function addCommand(input, options, command) {
   await trackUsage("add");
 
-  const parsed = parseInput(input);
-  if (!parsed) return;
-  const { key, value } = parsed;
+  const validation = validateKeyValueInput(input);
+  if (!validation.valid) {
+    console.error(chalk.red(`❌ ${validation.reason}`));
+    return;
+  }
 
-  const envFilename = command && command.optsWithGlobals ? command.optsWithGlobals().envFile : ".env";
-  const envPath = path.join(process.cwd(), envFilename);
-  const isSafe = command && command.optsWithGlobals ? command.optsWithGlobals().safe : false;
+  const { key, value } = validation;
+
+  if (isReservedKey(key)) {
+    console.log(chalk.yellow(`⚠️  Warning: "${key}" is a system-reserved variable name.`));
+  }
+
+  const envFilename = resolveEnvFilename(command);
+  const envPath = resolveEnvPath(command);
+  const isSafe = isSafeMode(command);
+
+  logger.verbose(`Target file: ${envFilename}`);
+  logger.verbose(`Full path: ${envPath}`);
 
   const exists = await fs.pathExists(envPath);
 
@@ -65,7 +60,7 @@ async function addCommand(input, options, command) {
       return;
     }
     await fs.writeFile(envPath, `${key}=${value}\n`, "utf-8");
-    console.log(chalk.green(`Added ${key}`));
+    console.log(chalk.green(`✅ Created ${envFilename} and added ${chalk.bold(key)}`));
     return;
   }
 
@@ -96,14 +91,15 @@ async function addCommand(input, options, command) {
       lines.push(`${key}=${value}`);
     }
     await fs.writeFile(envPath, normalizeTrailingNewline(lines.join("\n")), "utf-8");
-    console.log(chalk.green(`Added ${key}`));
+    await pruneBackups(envPath);
+    console.log(chalk.green(`✅ Added ${chalk.bold(key)}`));
     return;
   }
 
-  console.log(chalk.yellow(`${key} already exists. Overwrite? (y/N)`));
-  const confirmed = await askConfirmation("");
+  console.log(chalk.yellow(`⚠️  ${key} already exists. Overwrite? (y/N)`));
+  const confirmed = await askConfirmation("  ");
   if (!confirmed) {
-    console.log(chalk.yellow("Cancelled"));
+    console.log(chalk.yellow("Cancelled."));
     return;
   }
 
@@ -118,7 +114,8 @@ async function addCommand(input, options, command) {
     lines[idx] = `${key}=${value}`;
   }
   await fs.writeFile(envPath, normalizeTrailingNewline(lines.join("\n")), "utf-8");
-  console.log(chalk.green(`Updated ${key}`));
+  await pruneBackups(envPath);
+  console.log(chalk.green(`✅ Updated ${chalk.bold(key)}`));
 }
 
-module.exports = { addCommand, parseInput, askConfirmation };
+module.exports = { addCommand, askConfirmation };

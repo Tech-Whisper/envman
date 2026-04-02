@@ -4,27 +4,32 @@ const chalk = require("chalk");
 const readline = require("readline");
 const { decryptValue } = require("../core/security");
 const { trackUsage } = require("../core/telemetry");
+const { resolveEnvPath, resolveEnvFilename, isSafeMode } = require("../utils/fileHandler");
+const logger = require("../utils/logger");
 
 function askPassword(prompt) {
+  if (global.__mockPassword !== undefined) {
+    const pw = global.__mockPassword;
+    delete global.__mockPassword;
+    return Promise.resolve(pw);
+  }
   return new Promise((resolve) => {
     const rl = readline.createInterface({
       input: process.stdin,
-      output: process.stdout
+      output: process.stdout,
     });
-
-    rl.question(prompt, (password) => {
-      rl.close();
-      resolve(password);
-    });
-    
-    rl._writeToOutput = function _writeToOutput(stringToWrite) {
+    rl._writeToOutput = function (stringToWrite) {
       if (rl.stdoutMuted) {
         rl.output.write("*");
       } else {
         rl.output.write(stringToWrite);
       }
     };
-    
+    rl.question(prompt, (password) => {
+      rl.close();
+      console.log("");
+      resolve(password);
+    });
     rl.stdoutMuted = true;
   });
 }
@@ -32,36 +37,39 @@ function askPassword(prompt) {
 async function decryptCommand(options, command) {
   await trackUsage("decrypt");
 
-  const envFilename = command && command.optsWithGlobals ? command.optsWithGlobals().envFile : ".env";
-  const sourcePath = `${path.join(process.cwd(), envFilename)}.enc`;
-  const targetPath = path.join(process.cwd(), envFilename);
+  const envFilename = resolveEnvFilename(command);
+  const sourcePath = `${resolveEnvPath(command)}.enc`;
+  const targetPath = resolveEnvPath(command);
+
+  console.log(chalk.cyan.bold("\n  🔓 Decrypt Environment File\n"));
 
   const exists = await fs.pathExists(sourcePath);
   if (!exists) {
-    console.error(chalk.red(`No ${path.basename(sourcePath)} found to decrypt.`));
+    console.error(chalk.red(`  ❌ No ${path.basename(sourcePath)} found to decrypt.\n`));
     return;
   }
 
-  let isSafe = command && command.optsWithGlobals ? command.optsWithGlobals().safe : false;
-  if (isSafe && await fs.pathExists(targetPath)) {
-    console.log(chalk.yellow(`Safe mode enabled. Skipping decrypt because ${envFilename} already exists.`));
+  const isSafe = isSafeMode(command);
+  if (isSafe && (await fs.pathExists(targetPath))) {
+    console.log(chalk.yellow(`  [SAFE MODE] ${envFilename} already exists. Skipping.\n`));
     return;
   }
 
-  const content = await fs.readFile(sourcePath, "utf-8");
-  
-  const password = await askPassword("Enter decryption password: ");
-  console.log(""); // New line after hidden input
-  
+  const password = await askPassword("  Enter decryption password: ");
+
   try {
+    const content = await fs.readFile(sourcePath, "utf-8");
     const decryptedData = decryptValue(content, password);
     await fs.writeFile(targetPath, decryptedData, "utf-8");
-    console.log(chalk.green(`Decrypted ${path.basename(sourcePath)} to ${envFilename} successfully.`));
+
+    console.log(chalk.green(`  ✅ Decrypted ${path.basename(sourcePath)} → ${envFilename}`));
+    console.log(chalk.gray(`     Algorithm: AES-256-CBC + HMAC-SHA256\n`));
   } catch (err) {
-    console.error(chalk.red(`Decryption failed: ${err.message}`));
+    console.error(chalk.red(`  ❌ ${err.message}\n`));
+    logger.debug(err.stack);
   }
 }
 
 module.exports = {
-  decryptCommand
+  decryptCommand,
 };

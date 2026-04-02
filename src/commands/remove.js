@@ -2,30 +2,30 @@ const fs = require("fs-extra");
 const path = require("path");
 const chalk = require("chalk");
 const { normalizeContent, normalizeTrailingNewline } = require("../utils/parseEnv");
-const { createBackup } = require("../core/backup");
+const { createBackup, pruneBackups } = require("../core/backup");
 const { trackUsage } = require("../core/telemetry");
-
-function isValidKey(key) {
-  return typeof key === "string" && key.trim().length > 0;
-}
+const { validateKey } = require("../utils/validator");
+const { resolveEnvPath, resolveEnvFilename, isSafeMode } = require("../utils/fileHandler");
+const logger = require("../utils/logger");
 
 async function removeCommand(key, options, command) {
   await trackUsage("remove");
 
-  if (!isValidKey(key)) {
-    console.error(chalk.red("Key cannot be empty"));
+  const keyValidation = validateKey(key);
+  if (!keyValidation.valid) {
+    console.error(chalk.red(`❌ ${keyValidation.reason}`));
     return;
   }
+
   key = key.trim();
 
-  const envFilename = command && command.optsWithGlobals ? command.optsWithGlobals().envFile : ".env";
-  const envPath = path.join(process.cwd(), envFilename);
-
-  const isSafe = command && command.optsWithGlobals ? command.optsWithGlobals().safe : false;
+  const envFilename = resolveEnvFilename(command);
+  const envPath = resolveEnvPath(command);
+  const isSafe = isSafeMode(command);
 
   const exists = await fs.pathExists(envPath);
   if (!exists) {
-    console.error(chalk.red(`No ${envFilename} found`));
+    console.error(chalk.red(`❌ No ${envFilename} found.`));
     return;
   }
 
@@ -44,21 +44,21 @@ async function removeCommand(key, options, command) {
   }
 
   if (removeIndex === -1) {
-    console.error(chalk.red(`${key} not found in ${envFilename}`));
+    console.error(chalk.red(`❌ "${key}" not found in ${envFilename}.`));
     return;
   }
 
   if (isSafe) {
-    console.log(chalk.yellow(`[SAFE MODE] Would remove ${key} from ${envFilename}.`));
+    console.log(chalk.yellow(`[SAFE MODE] Would remove "${key}" from ${envFilename}.`));
     return;
   }
 
   await createBackup(envPath, options, command);
-
   lines.splice(removeIndex, 1);
   await fs.writeFile(envPath, normalizeTrailingNewline(lines.join("\n")), "utf-8");
+  await pruneBackups(envPath);
 
-  console.log(chalk.green(`Removed ${key}`));
+  console.log(chalk.green(`✅ Removed "${chalk.bold(key)}" from ${envFilename}.`));
 }
 
-module.exports = { removeCommand, isValidKey };
+module.exports = { removeCommand };

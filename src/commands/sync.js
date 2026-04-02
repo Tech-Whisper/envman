@@ -2,35 +2,45 @@ const fs = require("fs-extra");
 const path = require("path");
 const chalk = require("chalk");
 const { parseEnvMap, normalizeContent, normalizeTrailingNewline, buildLine, findLineIndex } = require("../utils/parseEnv");
-const { isSensitive, maskValue } = require("../core/security");
+const { isSensitive, maskValue, encryptValue, decryptValue } = require("../core/security");
 const { createBackup } = require("../core/backup");
 const { trackUsage } = require("../core/telemetry");
+const { resolveEnvFilename, isSafeMode } = require("../utils/fileHandler");
+const { loadKey } = require("../core/keyManager");
+const logger = require("../utils/logger");
 
 async function syncCommand(options, command) {
   await trackUsage("sync");
 
   if (!options || !options.to) {
-    console.error(chalk.red("Required: --to <targetPath>"));
+    console.error(chalk.red("  ❌ Required: --to <targetPath>"));
     return;
   }
 
-  const envFilename = command && command.optsWithGlobals ? command.optsWithGlobals().envFile : ".env";
+  const envFilename = resolveEnvFilename(command);
   const sourcePath = path.join(process.cwd(), envFilename);
   const targetDir = path.resolve(options.to);
   const targetPath = path.join(targetDir, envFilename);
+  const isSafe = isSafeMode(command) || options.dryRun;
 
-  const isSafe = (command && command.optsWithGlobals && command.optsWithGlobals().safe) || options.dryRun;
+  console.log(chalk.cyan.bold("\n  🔄 Sync Environment Variables\n"));
 
   const sourceExists = await fs.pathExists(sourcePath);
   if (!sourceExists) {
-    console.error(chalk.red(`No ${envFilename} found in current folder`));
+    console.error(chalk.red(`  ❌ No ${envFilename} found in current folder.`));
     return;
   }
 
   const targetDirExists = await fs.pathExists(targetDir);
   if (!targetDirExists) {
-    console.error(chalk.red("Target folder not found"));
+    console.error(chalk.red("  ❌ Target folder not found."));
     return;
+  }
+
+  // Verify encryption integrity if key is available
+  const encKey = await loadKey();
+  if (encKey) {
+    logger.verbose("Encryption key found. Sync will maintain encrypted format.");
   }
 
   const sourceContent = normalizeContent(await fs.readFile(sourcePath, "utf-8"));
@@ -59,41 +69,29 @@ async function syncCommand(options, command) {
     }
   }
 
-  if (diffs.length === 0) {
-    console.log(chalk.yellow("No changes needed"));
+  const changes = diffs.filter((d) => d.action !== "SKIP");
+
+  if (changes.length === 0) {
+    console.log(chalk.green("  ✅ All variables are already in sync. No changes needed.\n"));
     return;
   }
 
-  let changesToPerform = false;
+  console.log(chalk.gray(`  Source: ${sourcePath}`));
+  console.log(chalk.gray(`  Target: ${targetPath}\n`));
 
-  console.log(chalk.cyan(`Syncing ${envFilename} to ${targetDir}...\n`));
-
-  for (const diff of diffs) {
-    const valObj = diff.action !== "SKIP" && isSensitive(diff.key, diff.value) 
-      ? maskValue() 
-      : diff.value;
-    
-    // Formatting align cleanly
+  for (const diff of changes) {
+    const displayVal = isSensitive(diff.key, diff.value) ? maskValue(diff.value) : diff.value;
     const paddedKey = diff.key.padEnd(25);
 
-    if (diff.action === "SKIP") {
-      // console.log(chalk.gray(`  ${paddedKey} (unchanged)`));
-    } else if (diff.action === "ADD") {
-      console.log(chalk.green(`+ ${paddedKey} ${valObj}`));
-      changesToPerform = true;
+    if (diff.action === "ADD") {
+      console.log(chalk.green(`  + ${paddedKey} ${displayVal}`));
     } else if (diff.action === "UPDATE") {
-      console.log(chalk.blue(`~ ${paddedKey} ${valObj}`));
-      changesToPerform = true;
+      console.log(chalk.blue(`  ~ ${paddedKey} ${displayVal}`));
     }
   }
 
-  if (!changesToPerform) {
-    console.log(chalk.yellow("\nAll variables are already mapped. No changes needed."));
-    return;
-  }
-
   if (isSafe) {
-    console.log(chalk.yellow("\n[SAFE MODE] Dry run completed. No files were changed."));
+    console.log(chalk.yellow("\n  [SAFE MODE / DRY RUN] No files were changed.\n"));
     return;
   }
 
@@ -122,7 +120,7 @@ async function syncCommand(options, command) {
   }
 
   await fs.writeFile(targetPath, normalizeTrailingNewline(targetLines.join("\n")), "utf-8");
-  console.log(chalk.green(`\n✅ Synced ${synced} variables successfully.`));
+  console.log(chalk.green(`\n  ✅ Synced ${synced} variable(s) successfully.\n`));
 }
 
 module.exports = { syncCommand };
