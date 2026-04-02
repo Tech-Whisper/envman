@@ -1,31 +1,16 @@
 const fs = require("fs-extra");
 const path = require("path");
 const chalk = require("chalk");
-const { parseEnvKeys } = require("../utils/parseEnv");
-
-/**
- * Check if a key name indicates sensitive data
- * @param {string} key
- * @returns {boolean}
- */
-function containsSensitiveKey(key) {
-  const upper = key.toUpperCase();
-  const sensitivePatterns = [
-    "API_KEY",
-    "SECRET",
-    "TOKEN",
-    "PASSWORD",
-    "PRIVATE",
-  ];
-
-  return sensitivePatterns.some((pattern) => upper.includes(pattern));
-}
+const { parseEnvKeys, isSensitiveKey } = require("../utils/parseEnv");
 
 /**
  * Execute check command
+ * @param {Object} options Options passed from commander
+ * @param {Object} command The command object
  */
-async function checkCommand() {
-  const envPath = path.join(process.cwd(), ".env");
+async function checkCommand(options, command) {
+  const envFilename = command && command.optsWithGlobals ? command.optsWithGlobals().envFile : ".env";
+  const envPath = path.join(process.cwd(), envFilename);
   const gitignorePath = path.join(process.cwd(), ".gitignore");
   const examplePath = path.join(process.cwd(), ".env.example");
 
@@ -44,9 +29,9 @@ async function checkCommand() {
     const gitignoreContent = await fs.readFile(gitignorePath, "utf-8");
     const gitignoreLines = gitignoreContent.split("\n").map(l => l.trim());
 
-    if (!gitignoreLines.includes(".env")) {
+    if (!gitignoreLines.includes(envFilename)) {
       console.error(
-        chalk.red(".env is not listed in .gitignore")
+        chalk.red(`${envFilename} is not listed in .gitignore`)
       );
       issues++;
     }
@@ -57,7 +42,7 @@ async function checkCommand() {
     const keys = parseEnvKeys(envContent);
 
     for (const key of keys) {
-      if (containsSensitiveKey(key)) {
+      if (isSensitiveKey(key)) {
         console.log(
           chalk.yellow(`Sensitive key detected: ${key}`)
         );
@@ -85,6 +70,5 @@ async function checkCommand() {
 }
 
 module.exports = {
-  checkCommand,
-  containsSensitiveKey,
+  checkCommand
 };

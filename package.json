@@ -1,29 +1,34 @@
 {
-  "name": "envman",
-  "version": "1.0.0",
-  "description": "Secure CLI tool for managing .env files with validation, sync, and secret masking",
+  "name": "@fronik/envman",
+  "version": "2.0.0",
+  "description": "An elite, security-first CLI for environment variable management with encryption, safe sync, masking, and health diagnostics.",
   "main": "bin/envman.js",
   "bin": {
-    "envman": "./bin/envman.js"
+    "envman": "bin/envman.js"
   },
   "files": [
-    "bin/",
-    "src/"
+    "bin",
+    "src",
+    "README.md"
   ],
   "scripts": {
-    "test": "jest"
+    "test": "jest --passWithNoTests"
   },
   "keywords": [
     "env",
     "dotenv",
     "cli",
-    "config",
-    "environment",
-    "secret",
-    "security"
+    "security",
+    "encryption",
+    "sync",
+    "secrets",
+    "environment"
   ],
-  "author": "",
+  "author": "envman team",
   "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "dependencies": {
     "chalk": "^4.1.2",
     "commander": "^12.0.0",

@@ -2,38 +2,34 @@ const fs = require("fs-extra");
 const path = require("path");
 const chalk = require("chalk");
 const { parseEnvMap, normalizeContent, normalizeTrailingNewline, buildLine, findLineIndex } = require("../utils/parseEnv");
+const { isSensitive, maskValue } = require("../core/security");
+const { createBackup } = require("../core/backup");
+const { trackUsage } = require("../core/telemetry");
 
-/**
- * Execute sync command
- * @param {{to: string, overwrite: boolean, dryRun: boolean}} options
- */
-async function syncCommand(options) {
+async function syncCommand(options, command) {
+  await trackUsage("sync");
+
   if (!options || !options.to) {
-    console.error(
-      chalk.red("Required: --to <targetPath>")
-    );
+    console.error(chalk.red("Required: --to <targetPath>"));
     return;
   }
 
-  const sourcePath = path.join(process.cwd(), ".env");
+  const envFilename = command && command.optsWithGlobals ? command.optsWithGlobals().envFile : ".env";
+  const sourcePath = path.join(process.cwd(), envFilename);
   const targetDir = path.resolve(options.to);
-  const targetPath = path.join(targetDir, ".env");
+  const targetPath = path.join(targetDir, envFilename);
+
+  const isSafe = (command && command.optsWithGlobals && command.optsWithGlobals().safe) || options.dryRun;
 
   const sourceExists = await fs.pathExists(sourcePath);
-
   if (!sourceExists) {
-    console.error(
-      chalk.red("No .env found in current folder")
-    );
+    console.error(chalk.red(`No ${envFilename} found in current folder`));
     return;
   }
 
   const targetDirExists = await fs.pathExists(targetDir);
-
   if (!targetDirExists) {
-    console.error(
-      chalk.red("Target folder not found")
-    );
+    console.error(chalk.red("Target folder not found"));
     return;
   }
 
@@ -55,46 +51,58 @@ async function syncCommand(options) {
 
   for (const key of Object.keys(sourceMap)) {
     if (!(key in targetMap)) {
-      diffs.push({ key, action: "ADD" });
-    } else if (options.overwrite) {
-      diffs.push({ key, action: "OVERWRITE" });
+      diffs.push({ key, action: "ADD", value: sourceMap[key] });
+    } else if (options.overwrite && targetMap[key] !== sourceMap[key]) {
+      diffs.push({ key, action: "UPDATE", value: sourceMap[key] });
     } else {
-      diffs.push({ key, action: "SKIP" });
-    }
-  }
-
-  for (const diff of diffs) {
-    if (diff.action === "SKIP") {
-      console.log(
-        chalk.yellow(`SKIP ${diff.key} (exists)`)
-      );
-    } else {
-      console.log(
-        chalk.green(`${diff.action} ${diff.key}`)
-      );
+      diffs.push({ key, action: "SKIP", value: sourceMap[key] });
     }
   }
 
   if (diffs.length === 0) {
-    console.log(
-      chalk.yellow("No changes needed")
-    );
+    console.log(chalk.yellow("No changes needed"));
     return;
   }
 
-  if (options.dryRun) {
-    console.log(
-      chalk.yellow("\nDry run — no changes written")
-    );
+  let changesToPerform = false;
+
+  console.log(chalk.cyan(`Syncing ${envFilename} to ${targetDir}...\n`));
+
+  for (const diff of diffs) {
+    const valObj = diff.action !== "SKIP" && isSensitive(diff.key, diff.value) 
+      ? maskValue() 
+      : diff.value;
+    
+    // Formatting align cleanly
+    const paddedKey = diff.key.padEnd(25);
+
+    if (diff.action === "SKIP") {
+      // console.log(chalk.gray(`  ${paddedKey} (unchanged)`));
+    } else if (diff.action === "ADD") {
+      console.log(chalk.green(`+ ${paddedKey} ${valObj}`));
+      changesToPerform = true;
+    } else if (diff.action === "UPDATE") {
+      console.log(chalk.blue(`~ ${paddedKey} ${valObj}`));
+      changesToPerform = true;
+    }
+  }
+
+  if (!changesToPerform) {
+    console.log(chalk.yellow("\nAll variables are already mapped. No changes needed."));
     return;
   }
+
+  if (isSafe) {
+    console.log(chalk.yellow("\n[SAFE MODE] Dry run completed. No files were changed."));
+    return;
+  }
+
+  await createBackup(targetPath, options, command);
 
   let synced = 0;
 
   for (const diff of diffs) {
-    if (diff.action === "SKIP") {
-      continue;
-    }
+    if (diff.action === "SKIP") continue;
 
     const value = sourceMap[diff.key];
     const existingIndex = findLineIndex(targetLines, diff.key);
@@ -102,25 +110,19 @@ async function syncCommand(options) {
     if (existingIndex !== -1) {
       targetLines[existingIndex] = buildLine(diff.key, value);
     } else {
-      const hasTrailingNewline = targetContent.endsWith("\n");
+      const hasTrailingNewline = targetContent.endsWith("\n") || targetLines.length === 0;
       const lastEmptyIndex = targetLines.length - 1;
-      if (hasTrailingNewline && targetLines[lastEmptyIndex] === "") {
+      if (targetLines.length > 0 && hasTrailingNewline && targetLines[lastEmptyIndex] === "") {
         targetLines.splice(lastEmptyIndex, 0, buildLine(diff.key, value));
       } else {
         targetLines.push(buildLine(diff.key, value));
       }
     }
-
     synced++;
   }
 
   await fs.writeFile(targetPath, normalizeTrailingNewline(targetLines.join("\n")), "utf-8");
-
-  console.log(
-    chalk.green(`Synced ${synced} variables`)
-  );
+  console.log(chalk.green(`\n✅ Synced ${synced} variables successfully.`));
 }
 
-module.exports = {
-  syncCommand,
-};
+module.exports = { syncCommand };

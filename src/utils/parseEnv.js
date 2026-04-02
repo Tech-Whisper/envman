@@ -27,25 +27,7 @@ function stripInlineComment(value) {
   return value;
 }
 
-/**
- * Check if a key name suggests sensitive data
- * @param {string} key
- * @returns {boolean}
- */
-function isSensitiveKey(key) {
-  const upper = key.toUpperCase();
-  const patterns = ["API_KEY", "SECRET", "TOKEN", "PASSWORD", "PRIVATE"];
-  return patterns.some(p => upper.includes(p));
-}
-
-/**
- * Mask a sensitive value for display
- * @param {string} value
- * @returns {string}
- */
-function maskValue(value) {
-  return "******";
-}
+const { isSensitiveKey, isSensitiveValue, isSensitive, maskValue } = require("../core/security");
 
 /**
  * Parse .env content into array of {key, value} objects
@@ -147,6 +129,8 @@ module.exports = {
   parseEnvKeys,
   stripInlineComment,
   isSensitiveKey,
+  isSensitiveValue,
+  isSensitive,
   maskValue,
   normalizeTrailingNewline,
   buildLine,
