@@ -177,15 +177,6 @@ For vulnerability reports, please open a private security advisory on GitHub.
 
 ---
 
-## ⚠️ README Maintenance Notes
-
-- Screenshot images must remain in the `docs/` folder
-- Image filenames must stay lowercase: `init.png`, `list.png`, `encrypt.png`
-- The Installation section uses fenced code blocks — do not modify the markdown structure
-- All code blocks must be properly closed with triple backticks
-
----
-
 ## 🤝 Contributing & Feedback
 
 Found a bug? Have a feature request? Contributions and feedback are welcome — open an issue or submit a pull request.
