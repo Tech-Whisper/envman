@@ -59,4 +59,65 @@ Envman solves this by giving you a clean workflow for security and environment m
 Install globally:
 
 ```bash
-npm install -g @fronik/envman or npx @fronik/envman
+npm install -g @fronik/envman
+```
+
+Or use with npx (no install required):
+
+```bash
+npx @fronik/envman
+```
+
+---
+
+## 📸 Screenshots
+
+<img src="docs/init.png" width="800" />
+
+<img src="docs/list.png" width="800" />
+
+<img src="docs/encrypt.png" width="800" />
+
+---
+
+## ⚡ Quick Start
+
+```bash
+envman init
+envman list
+envman encrypt
+envman doctor
+```
+
+---
+
+## 📚 Commands
+
+| Command | Description |
+|---------|-------------|
+| `envman init` | Initialize envman in your project |
+| `envman list` | List all managed environment files |
+| `envman encrypt` | Encrypt a `.env` file |
+| `envman decrypt` | Decrypt an encrypted file |
+| `envman doctor` | Run health checks on your setup |
+| `envman scan` | Scan for exposed secrets |
+| `envman backup` | Create a backup of your env files |
+| `envman generate` | Generate a `.env.example` file |
+
+---
+
+## 🔒 Security
+
+All encryption uses AES-256-GCM for maximum security. Secrets are never stored in plain text and all operations happen locally on your machine.
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+---
+
+<p align="center">
+  Made with ❤️ for developers who care about security
+</p>
