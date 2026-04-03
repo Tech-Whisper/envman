@@ -28,12 +28,12 @@
 
 ## ⚡ Why Developers Use Envman
 
-Stop wrestling with messy `.env` files. Envman gives you a clean, secure workflow for managing environment variables across all your projects.
+Stop wrestling with messy `.env` files. Envman gives you a clean, secure workflow for managing environment variables.
 
-- Stop manually tracking which `.env` is production vs development
+- Centralized management across all your projects
 - Never accidentally commit secrets to version control
-- Validate your environment setup before deployments
-- Share environment templates with your team safely
+- Validate environment setup before deployments
+- Share templates with your team safely
 
 ---
 
@@ -132,17 +132,46 @@ Tests run with Jest and include coverage reports.
 
 ---
 
+## 🗺️ Roadmap
+
+Upcoming features planned for future releases:
+
+- Interactive demo mode with animated GIF
+- Environment validation schema support
+- Import/export configurations across projects
+- Enhanced CI/CD integration coverage
+- Extended secret detection patterns
+
+---
+
+## 🔒 Why Trust Envman
+
+- **No Cloud Dependency** — Everything runs locally on your machine
+- **Local-Only Processing** — Your secrets never leave your environment
+- **Encryption-First Design** — Security is built into every feature
+- **Open-Source Transparency** — Audit the code yourself
+
+---
+
+## 👥 Built For
+
+- **Backend Developers** — Manage complex environment configurations
+- **API Developers** — Handle multiple API keys and endpoints securely
+- **Security-Focused Teams** — Scan, encrypt, and validate with confidence
+
+---
+
 ## 📌 Project Stability
 
 - **Tested CLI** — Comprehensive test suite with Jest
 - **Stable Commands** — All commands are battle-tested and versioned
-- **Secure Handling** — No secrets stored in plain text, all operations are local
+- **Secure Handling** — No secrets stored in plain text
 
 ---
 
 ## 🔒 Security
 
-All encryption uses **AES-256-GCM** for maximum security. Secrets are never stored in plain text and all operations happen locally on your machine.
+All encryption uses **AES-256-GCM**. Secrets are never stored in plain text and all operations happen locally.
 
 For vulnerability reports, please open a private security advisory on GitHub.
 
@@ -157,30 +186,15 @@ For vulnerability reports, please open a private security advisory on GitHub.
 
 ---
 
-## 🚀 Built for Developers Who Care About Security
+## 🤝 Contributing & Feedback
 
-Envman is designed for developers and teams who understand that environment management shouldn't be an afterthought. It's built to be secure, reliable, and developer-friendly.
-
----
-
-## 💬 Feedback & Contributions Welcome
-
-Found a bug? Have a feature request? Contributions are welcome — open an issue or submit a pull request.
+Found a bug? Have a feature request? Contributions and feedback are welcome — open an issue or submit a pull request.
 
 ---
 
-## ⭐ Why This Project Deserves a Star
+## ⭐ Show Your Support
 
-- Solves a real problem that every developer faces
-- Security-first approach with no compromises
-- Active maintenance and improvements
-- Clean, well-documented CLI that respects your time
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit issues or pull requests.
+If Envman helps you manage environments more securely, give it a ⭐ — it helps the project grow and reach more developers.
 
 ---
 
