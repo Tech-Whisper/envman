@@ -41,11 +41,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fronik/envman.git"
+    "url": "git+https://github.com/Tech-Whisper/envman.git"
   },
-  "homepage": "https://github.com/fronik/envman#readme",
+  "homepage": "https://github.com/Tech-Whisper/envman#readme",
   "bugs": {
-    "url": "https://github.com/fronik/envman/issues"
+    "url": "https://github.com/Tech-Whisper/envman/issues"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -15,40 +15,14 @@
 
 ---
 
-## 🚀 Overview
+## 🔥 Feature Highlights
 
-Envman is a security-first CLI tool for managing `.env` files safely and efficiently.
-
-It helps developers:
-- 🔐 encrypt sensitive environment variables
-- 🔍 detect exposed secrets before they leak
-- 🩺 run health checks on `.env` setups
-- 📦 create backups before changes
-- 📄 generate `.env.example` files for safer sharing
-
----
-
-## ✨ Features
-
-- AES-256 encryption for `.env` files
-- Secret scanning for API keys, tokens, and credentials
-- Doctor command for environment validation
-- Automatic backups before edits
-- `.env.example` generation
-- Interactive CLI mode
-- Clean and developer-friendly workflow
-
----
-
-## 🤔 Why Envman?
-
-Managing `.env` files is usually:
-- insecure
-- messy
-- hard to maintain
-- easy to break
-
-Envman solves this by giving you a clean workflow for security and environment management in one CLI.
+- **AES-256-GCM Encryption** — Military-grade encryption for your sensitive variables
+- **Secret Scanner** — Detect exposed API keys and tokens before they leak
+- **Health Diagnostics** — Doctor command validates your environment setup
+- **Automatic Backups** — Every change is backed up before execution
+- **`.env.example` Generator** — Share templates safely without exposing secrets
+- **Cross-Platform** — Works seamlessly on macOS, Linux, and Windows
 
 ---
 
@@ -68,17 +42,19 @@ npx @fronik/envman
 
 ---
 
-## 📸 Screenshots
+## 🎯 Use Cases
 
-<img src="docs/init.png" width="800" />
-
-<img src="docs/list.png" width="800" />
-
-<img src="docs/encrypt.png" width="800" />
+| Scenario | How Envman Helps |
+|----------|------------------|
+| **Multiple Environments** | Dev, staging, production — switch configs with one command |
+| **Team Collaboration** | Share `.env.example` without exposing secrets |
+| **Security Audits** | Scan for leaked credentials in your codebase |
+| **CI/CD Pipelines** | Validate environment health before deployments |
+| **Legacy Projects** | Gradually secure messy `.env` files with backups |
 
 ---
 
-## ⚡ Quick Start
+## 🚀 Quick Start
 
 ```bash
 envman init
@@ -86,6 +62,16 @@ envman list
 envman encrypt
 envman doctor
 ```
+
+---
+
+## 📸 Screenshots
+
+<img src="docs/init.png" width="800" />
+
+<img src="docs/list.png" width="800" />
+
+<img src="docs/encrypt.png" width="800" />
 
 ---
 
@@ -104,15 +90,48 @@ envman doctor
 
 ---
 
+## 🧪 Testing
+
+```bash
+npm test
+```
+
+Tests run with Jest and include coverage reports.
+
+---
+
+## 🎯 Project Goals
+
+1. **Security First** — Every feature is designed to protect sensitive data
+2. **Zero Surprises** — Automatic backups before any destructive operation
+3. **Developer Experience** — Clean CLI with helpful feedback and validation
+4. **Reliability** — Battle-tested with comprehensive test coverage
+
+---
+
 ## 🔒 Security
 
-All encryption uses AES-256-GCM for maximum security. Secrets are never stored in plain text and all operations happen locally on your machine.
+All encryption uses **AES-256-GCM** for maximum security. Secrets are never stored in plain text and all operations happen locally on your machine.
+
+For vulnerability reports, please open a private security advisory on GitHub.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit issues or pull requests.
+
+---
+
+## ⭐ Show Your Support
+
+If Envman helps you manage environments more securely, give it a ⭐ — it helps the project grow and reach more developers who care about security.
 
 ---
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
