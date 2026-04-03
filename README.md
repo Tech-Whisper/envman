@@ -20,7 +20,6 @@
 Envman is a security-first CLI tool for managing `.env` files safely and efficiently.
 
 It helps developers:
-
 - 🔐 encrypt sensitive environment variables
 - 🔍 detect exposed secrets before they leak
 - 🩺 run health checks on `.env` setups
@@ -44,7 +43,6 @@ It helps developers:
 ## 🤔 Why Envman?
 
 Managing `.env` files is usually:
-
 - insecure
 - messy
 - hard to maintain
