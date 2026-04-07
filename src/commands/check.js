@@ -14,7 +14,7 @@ async function checkCommand(options, command) {
   const gitignorePath = path.join(process.cwd(), ".gitignore");
   const examplePath = path.join(process.cwd(), ".env.example");
 
-  console.log(chalk.cyan.bold("\n  🔎 Security Best Practices Check\n"));
+  console.log(chalk.cyan.bold("\n  Checking .env best practices...\n"));
 
   let issues = 0;
 
@@ -24,16 +24,16 @@ async function checkCommand(options, command) {
 
   // Check .gitignore
   if (!gitignoreExists) {
-    console.log(chalk.red("  ❌ .gitignore not found — secrets may be committed!"));
+    console.log(chalk.red("  ✗ .gitignore not found"));
     issues++;
   } else {
     const gitignoreContent = await fs.readFile(gitignorePath, "utf-8");
     const gitignoreLines = gitignoreContent.split("\n").map((l) => l.trim());
     if (!gitignoreLines.includes(envFilename) && !gitignoreLines.includes(".env")) {
-      console.log(chalk.red(`  ❌ ${envFilename} is not listed in .gitignore.`));
+      console.log(chalk.red(`  ✗ ${envFilename} is not in .gitignore`));
       issues++;
     } else {
-      console.log(chalk.green(`  ✅ ${envFilename} is excluded in .gitignore.`));
+      console.log(chalk.green(`  ✓ ${envFilename} is ignored`));
     }
   }
 
@@ -41,10 +41,10 @@ async function checkCommand(options, command) {
   if (gitignoreExists) {
     const gitignoreContent = await fs.readFile(gitignorePath, "utf-8");
     if (!gitignoreContent.includes(".envmanrc")) {
-      console.log(chalk.yellow("  ⚠️  .envmanrc (encryption key) is not in .gitignore."));
+      console.log(chalk.yellow("  ⚠ .envmanrc should be ignored"));
       issues++;
     } else {
-      console.log(chalk.green("  ✅ .envmanrc is excluded in .gitignore."));
+      console.log(chalk.green("  ✓ .envmanrc is ignored"));
     }
   }
 
@@ -55,38 +55,37 @@ async function checkCommand(options, command) {
     const sensitiveKeys = keys.filter(isSensitiveKey);
 
     if (sensitiveKeys.length > 0) {
-      console.log(chalk.yellow(`  ⚠️  ${sensitiveKeys.length} sensitive key(s) detected:`));
+      console.log(chalk.yellow(`  ⚠ ${sensitiveKeys.length} sensitive key(s):`));
       for (const k of sensitiveKeys) {
-        console.log(chalk.yellow(`      → ${k}`));
+        console.log(chalk.gray(`      ${k}`));
       }
-      issues += sensitiveKeys.length;
     } else {
-      console.log(chalk.green("  ✅ No obviously sensitive key names detected."));
+      console.log(chalk.green("  ✓ No obviously sensitive key names"));
     }
   } else {
-    console.log(chalk.yellow(`  ⚠️  ${envFilename} not found.`));
+    console.log(chalk.yellow(`  ⚠ ${envFilename} not found`));
   }
 
   // Check .env.example
   if (!exampleExists) {
-    console.log(chalk.yellow("  ⚠️  .env.example not found. Run envman generate."));
+    console.log(chalk.yellow("  ⚠ .env.example not found"));
     issues++;
   } else {
-    console.log(chalk.green("  ✅ .env.example exists for team reference."));
+    console.log(chalk.green("  ✓ .env.example exists"));
   }
 
   // Check .envman-backups
   const backupDir = path.join(process.cwd(), ".envman-backups");
   if (await fs.pathExists(backupDir)) {
-    console.log(chalk.green("  ✅ Backup directory exists."));
+    console.log(chalk.green("  ✓ Backups are set up"));
   }
 
   // Summary
   console.log("");
   if (issues === 0) {
-    console.log(chalk.green.bold("  ✅ All security checks passed!\n"));
+    console.log(chalk.green.bold("  All checks passed.\n"));
   } else {
-    console.log(chalk.red(`  ⛔ ${issues} issue${issues > 1 ? "s" : ""} found. Please review.\n`));
+    console.log(chalk.yellow(`  Found ${issues} item(s) to review.\n`));
   }
 }
 
